@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools >= 77.0.3"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = 'xecm'
+version = "0.0.3"
+authors = [
+  { name="Philipp Egger", email="philipp.egger@handel-it.com" },
+]
+description = 'Simple Python library to call Opentext Extended ECM REST API'
+keywords = [
+  'xecm',
+  'opentext',
+  'extendedecm',
+  'contentserver',
+  'otcs',
+  'otds'
+]
+readme = 'README.md'
+requires-python = '>=3.10'
+classifiers = [
+  'Development Status :: 5 - Production/Stable',
+  'Programming Language :: Python :: 3',
+  'Operating System :: OS Independent',
+  'Intended Audience :: Developers',
+  'Topic :: Internet :: WWW/HTTP :: Dynamic Content :: Content Management System',
+]
+license = "MIT"
+license-files = ["LICEN[CS]E*"]
+dependencies = [
+  'requests < 3'
+]
+
+[project.urls]
+Homepage = "https://github.com/fitschgo/xecm"

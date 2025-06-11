@@ -1,0 +1,9 @@
+dist/
+xecm.egg-info/
+src/xecm.egg-info/
+__pycache__/
+.venv/
+.idea/
+__pycache__
+.env
+~$*
