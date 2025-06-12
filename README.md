@@ -15,9 +15,21 @@ pip install xecm
 ## Start using the xecm package
 ```python
 import xecm
+import logging
+
+logging.basicConfig(format='%(asctime)s [%(levelname)s] %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)  # use logging.ERROR to reduce logging
 
 if __name__ == '__main__':
-    login = xecm.XECMLogin('', '', '', '', '', '')
+    deflogger = logging.getLogger("mylogger")
+    
+    # get OTCSTicket with username and password
+    login = xecm.XECMLogin(xecm.LoginType.OTCS_TICKET, 'http://otcs.phil.local/otcs/cs.exe', 'myuser', 's#cret', deflogger)
+
+    # get OTDSTicket with username and password
+    login = xecm.XECMLogin(xecm.LoginType.OTDS_TICKET, 'http://otds.phil.local', 'myuser@partition', 's#cret', deflogger)
+
+    # get OTDS Bearer Token with client id and client secret
+    login = xecm.XECMLogin(xecm.LoginType.OTDS_BEARER, 'http://otds.phil.local', 'oauth-user', 'gU5p8....4KZ', deflogger)
 
 ```
 
