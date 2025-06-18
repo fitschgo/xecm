@@ -1,6 +1,6 @@
-"""xecm - Simple Python Library to call Opentext Extended ECM REST API."""
+"""xecm - Simple Python Library to call OpenText Extended ECM REST API."""
 
-from .xecmlogin import XECMLogin
-from .xecmlogin import LoginType
+from .CSRestAPI import CSRestAPI
+from .CSRestAPI import LoginType
 
-__all__ = ["XECMLogin", "LoginType"]
+__all__ = ["CSRestAPI", "LoginType"]
