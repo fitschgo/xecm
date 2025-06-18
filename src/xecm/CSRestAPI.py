@@ -4,11 +4,13 @@ __credits__ = ["Philipp Egger"]
 __maintainer__ = "Philipp Egger"
 __email__ = "philipp.egger@handel-it.com"
 
+import base64
 import logging
 import requests
 import enum
 import urllib.parse
 import json
+import os
 
 class LoginType(enum.Enum):
     OTCS_TICKET = enum.auto()
@@ -18,7 +20,7 @@ class LoginType(enum.Enum):
 class CSRestAPI:
     """ Do Login and get OTCSTicket, OTDSTicket or Bearer Token """
     __logger: logging.Logger
-    __useragent = 'Chrome XECM'
+    __useragent = 'Chrome xECM'
     __base_url = ''
     __ticket = ''
     __usr = ''
@@ -410,12 +412,175 @@ class CSRestAPI:
             auth_header = 'Authorization'
             auth_ticket = f'Bearer {self.__ticket}'
 
-        r = requests.post(url=api_url,
-                         headers={'Content-Type': 'application/x-www-form-urlencoded', auth_header: auth_ticket,
-                                  'User-Agent': self.__useragent}, data=params)
+        r = requests.post(url=api_url, headers={'Content-Type': 'application/x-www-form-urlencoded', auth_header: auth_ticket, 'User-Agent': self.__useragent}, data=params)
 
         if self.__logger:
             self.__pretty_print_POST(r.request)
+
+        if r.ok:
+            try:
+                retval = r.text
+
+                if self.__logger:
+                    self.__logger.debug(f'-----------RESPONSE-----------\r\n{r.text}')
+
+            except Exception as innerErr:
+                error_message = f'Error in call_post_form_url_encoded() -> {api_url}: {innerErr}\n{r.text}'
+                if self.__logger:
+                    self.__logger.error(error_message)
+                raise Exception(error_message)
+        else:
+            error_message = f'Error in call_post_form_url_encoded() -> {api_url}: {r.status_code} {r.text}'
+            if self.__logger:
+                self.__logger.error(error_message)
+            raise Exception(error_message)
+
+        return retval
+
+    def call_post_form_data(self, api_url: str, params: dict, files: dict) -> str:
+        """Generic Call Content Server API with POST method using Content-Type application/form-data.
+
+        Args:
+            api_url (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            params (dict):
+                POST parameters as dictionary. I.e. { 'id': node_id }
+
+            files (dict):
+                FILE parameter as dictionary. I.e. {'file': (remote_filename, open(os.path.join(local_folder, local_filename), 'rb'), 'application/octet-stream')}
+
+        Returns:
+            str: JSON result of API call
+
+        """
+        error_message = ''
+        retval = ''
+
+        # do REST API call to CS
+        auth_header = ''
+        auth_ticket = ''
+        if self.__login_type == LoginType.OTCS_TICKET:
+            auth_header = 'OTCSTicket'
+            auth_ticket = self.__ticket
+        elif self.__login_type == LoginType.OTDS_TICKET:
+            auth_header = 'OTDSTicket'
+            auth_ticket = self.__ticket
+        else:
+            auth_header = 'Authorization'
+            auth_ticket = f'Bearer {self.__ticket}'
+
+        r = requests.post(url=api_url, headers={auth_header: auth_ticket, 'User-Agent': self.__useragent}, data=params, files=files)
+
+        if self.__logger:
+            self.__pretty_print_POST(r.request)
+
+        if r.ok:
+            try:
+                retval = r.text
+
+                if self.__logger:
+                    self.__logger.debug(f'-----------RESPONSE-----------\r\n{r.text}')
+
+            except Exception as innerErr:
+                error_message = f'Error in call_post_form_data() -> {api_url}: {innerErr}\n{r.text}'
+                if self.__logger:
+                    self.__logger.error(error_message)
+                raise Exception(error_message)
+        else:
+            error_message = f'Error in call_post_form_data() -> {api_url}: {r.status_code} {r.text}'
+            if self.__logger:
+                self.__logger.error(error_message)
+            raise Exception(error_message)
+
+        return retval
+
+    def call_put(self, api_url: str, params: dict) -> str:
+        """Generic Call Content Server API with PUT method.
+
+        Args:
+            api_url (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            params (dict):
+                POST parameters as dictionary. I.e. { 'id': node_id }
+
+        Returns:
+            str: JSON result of API call
+
+        """
+        error_message = ''
+        retval = ''
+
+        # do REST API call to CS
+        auth_header = ''
+        auth_ticket = ''
+        if self.__login_type == LoginType.OTCS_TICKET:
+            auth_header = 'OTCSTicket'
+            auth_ticket = self.__ticket
+        elif self.__login_type == LoginType.OTDS_TICKET:
+            auth_header = 'OTDSTicket'
+            auth_ticket = self.__ticket
+        else:
+            auth_header = 'Authorization'
+            auth_ticket = f'Bearer {self.__ticket}'
+
+        r = requests.put(url=api_url, headers={auth_header: auth_ticket, 'User-Agent': self.__useragent}, data=params)
+
+        if self.__logger:
+            self.__pretty_print_POST(r.request)
+
+        if r.ok:
+            try:
+                retval = r.text
+
+                if self.__logger:
+                    self.__logger.debug(f'-----------RESPONSE-----------\r\n{r.text}')
+
+            except Exception as innerErr:
+                error_message = f'Error in call_put() -> {api_url}: {innerErr}\n{r.text}'
+                if self.__logger:
+                    self.__logger.error(error_message)
+                raise Exception(error_message)
+        else:
+            error_message = f'Error in call_put() -> {api_url}: {r.status_code} {r.text}'
+            if self.__logger:
+                self.__logger.error(error_message)
+            raise Exception(error_message)
+
+        return retval
+
+    def call_delete(self, api_url: str) -> str:
+        """Generic Call Content Server API with DELETE method.
+
+        Args:
+            api_url (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+        Returns:
+            str: JSON result of API call
+
+        """
+        error_message = ''
+        retval = ''
+
+        # do REST API call to CS
+        auth_header = ''
+        auth_ticket = ''
+        if self.__login_type == LoginType.OTCS_TICKET:
+            auth_header = 'OTCSTicket'
+            auth_ticket = self.__ticket
+        elif self.__login_type == LoginType.OTDS_TICKET:
+            auth_header = 'OTDSTicket'
+            auth_ticket = self.__ticket
+        else:
+            auth_header = 'Authorization'
+            auth_ticket = f'Bearer {self.__ticket}'
+
+        r = requests.delete(url=api_url, headers={'Content-Type': 'application/json', auth_header: auth_ticket, 'User-Agent': self.__useragent})
+
+        if self.__logger:
+            self.__pretty_print_GET(r.request)
 
         if r.ok:
             try:
@@ -448,7 +613,7 @@ class CSRestAPI:
                 The Node ID to get the information
 
             filter_properties (list):
-                The List to fetch only certain properties. I.e. ['id', 'name']
+                The List to fetch only certain properties. I.e. ['id', 'name'] or ['id', 'name', 'type', 'type_name', 'name_multilingual', 'description_multilingual'] or [] for all properties
 
             load_categories (bool):
                 Optionally load categories of node.
@@ -507,11 +672,458 @@ class CSRestAPI:
                     retval['permissions'] = item["data"].get('permissions', [])
 
                 if load_classifications:
-                    retval['classifications'] = self.classifications_get(base_url_cs, node_id, ['data'])
+                    retval['classifications'] = self.node_classifications_get(base_url_cs, node_id, ['data'])
 
         return retval
 
-    def classifications_get(self, base_url_cs: str, node_id: int, filter_fields: list) -> list:
+    def node_create(self, base_url_cs: str, parent_id: int, type_id: int, node_name:str, node_description: str, multi_names: dict, multi_descriptions: dict) -> int:
+        """ Create a Node.
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            parent_id (int):
+                The parent id of container in which the node is created.
+
+            type_id (int):
+                The type id of the new node. I.e. 0 for a folder
+
+            node_name (str):
+                The name of the new node.
+
+            node_description (str):
+                The description of the new node.
+
+            multi_names (dict):
+                The names in different languages of the new node. I.e. { 'en': 'name en', 'de': 'name de' }
+
+            multi_descriptions (dict):
+                The descriptions in different languages of the new node. I.e. { 'en': 'desc en', 'de': 'desc de' }
+
+        Returns:
+            int: the new node id of the uploaded document
+
+        """
+        retval = -1
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v2/nodes'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        data = {'type': type_id, 'parent_id': parent_id, 'name': node_name}
+        if node_description:
+            data['description'] = node_description
+        if multi_names:
+            data['name_multilingual'] = multi_names
+        if multi_descriptions:
+            data['description_multilingual'] = multi_descriptions
+
+        params = {'body': json.dumps(data)}
+
+        res = self.call_post_form_url_encoded(url, params)
+
+        jres = json.loads(res)
+
+        if jres and jres.get('results', {}) and jres['results'].get('data', {}) and  jres['results']['data'].get('properties', {}):
+            retval = jres['results']['data']['properties'].get('id', -1)
+
+        return retval
+
+    def node_update(self, base_url_cs: str, node_id: int, new_parent_id: int, new_name: str, new_description: str, new_multi_names: dict, new_multi_descriptions: dict, new_categories_when_moved: dict) -> int:
+        """ Generic update of a Node.
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            node_id (int):
+                The node which is updated.
+
+            new_parent_id (int):
+                Optional: if set then the node is moved to this new target.
+
+            new_name (str):
+                Optional: if set then the name of the node is renamed.
+
+            new_description (str):
+                Optional: if set then the description of the node is changed.
+
+            new_multi_names (dict):
+                Optional: if set then the names in different languages of the node are renamed. I.e. { 'en': 'name en', 'de': 'name de' }
+
+            new_multi_descriptions (dict):
+                Optional: if set then the descriptions in different languages of the node are changed. I.e. { 'en': 'desc en', 'de': 'desc de' }
+
+            new_categories_when_moved (dict):
+                Optional: if set then the categories of the node are changed when the node is moved to a new location. I.e. {"6228_2":"hello"} or {"inheritance":0} (selecting ORIGINAL categories inheritance when moved) or {"inheritance":1, "6228_2":"hello"} (selecting DESTINATION categories inheritance and applying a custom value to 6228_2 when moved) or {"inheritance":2, "9830_1":{}, "6228_1":{}} (selecting MERGED categories inheritance and applying default values to 9830_1 and 6228_1)
+
+        Returns:
+            int: the node id of the updated node
+
+        """
+        retval = -1
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v2/nodes/{node_id}'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        data = {}
+        if new_parent_id and new_parent_id > 0:
+            data['parent_id'] = new_parent_id
+        if new_name:
+            data['name'] = new_name
+        if new_description:
+            data['description'] = new_description
+        if new_multi_names:
+            data['name_multilingual'] = new_multi_names
+        if new_multi_descriptions:
+            data['description_multilingual'] = new_multi_descriptions
+        if new_categories_when_moved:
+            if not new_parent_id or not new_parent_id > 0:
+                raise Exception(f'Error in node_update(): provide a new parent_id ({new_parent_id}) when applying categories.')
+            data['roles'] = { 'categories': new_categories_when_moved }
+
+        params = {'body': json.dumps(data)}
+
+        res = self.call_put(url, params)
+
+        jres = json.loads(res)
+
+        if jres and jres.get('results', {}) and jres['results'].get('data', {}) and  jres['results']['data'].get('properties', {}):
+            retval = jres['results']['data']['properties'].get('id', -1)
+
+        return retval
+
+    def node_update_name(self, base_url_cs: str, node_id: int, new_name: str, new_description: str, new_multi_names: dict, new_multi_descriptions: dict) -> int:
+        """ Update the names and descriptions of a Node.
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            node_id (int):
+                The node which is updated.
+
+            new_name (str):
+                Optional: if set then the name of the node is renamed.
+
+            new_description (str):
+                Optional: if set then the description of the node is changed.
+
+            new_multi_names (dict):
+                Optional: if set then the names in different languages of the node are renamed. I.e. { 'en': 'name en', 'de': 'name de' }
+
+            new_multi_descriptions (dict):
+                Optional: if set then the descriptions in different languages of the node are changed. I.e. { 'en': 'desc en', 'de': 'desc de' }
+
+        Returns:
+            int: the node id of the updated node
+
+        """
+
+        return self.node_update(base_url_cs, node_id, 0, new_name, new_description, new_multi_names, new_multi_descriptions, {})
+
+    def node_move(self, base_url_cs: str, node_id: int, new_parent_id: int) -> int:
+        """ Move a Node.
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            node_id (int):
+                The node which is updated.
+
+            new_parent_id (int):
+                The node is moved to this new target.
+
+        Returns:
+            int: the node id of the updated node
+
+        """
+
+        return self.node_update(base_url_cs, node_id, new_parent_id, '', '', {}, {}, {})
+
+    def node_move_and_apply_category(self, base_url_cs: str, node_id: int, new_parent_id: int, new_categories_when_moved: dict) -> int:
+        """ Move a Node.
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            node_id (int):
+                The node which is updated.
+
+            new_parent_id (int):
+                The node is moved to this new target.
+
+            new_categories_when_moved (dict):
+                The categories of the node are changed when the node is moved to a new location. I.e. {"6228_2":"hello"} or {"inheritance":0} (selecting ORIGINAL categories inheritance when moved) or {"inheritance":1, "6228_2":"hello"} (selecting DESTINATION categories inheritance and applying a custom value to 6228_2 when moved) or {"inheritance":2, "9830_1":{}, "6228_1":{}} (selecting MERGED categories inheritance and applying default values to 9830_1 and 6228_1)
+
+        Returns:
+            int: the node id of the updated node
+
+        """
+
+        return self.node_update(base_url_cs, node_id, new_parent_id, '', '', {}, {}, new_categories_when_moved)
+
+    def node_delete(self, base_url_cs: str, node_id: int):
+        """ Create a Node.
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            node_id (int):
+                The node id to be deleted.
+
+        Returns:
+            int: the new node id of the uploaded document
+
+        """
+        retval = {}
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v2/nodes/{node_id}'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        res = self.call_delete(url)
+
+        jres = json.loads(res)
+
+        if jres and jres.get('results', {}):
+            retval = jres.get('results', {})
+
+        return retval
+
+    def node_download_file(self, base_url_cs: str, node_id: int, node_version: str, local_folder: str, local_filename: str) -> dict:
+        """ Download Node Content into a Local File.
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            node_id (int):
+                The Node ID to get the information
+
+            node_version (str):
+                Optionally the version of the node
+
+            local_folder (str):
+                The local path to store the file.
+
+            local_filename (str):
+                The file name of the document.
+
+        Returns:
+            dict: result of download with structure {'message', 'file_size', 'location'}
+
+        """
+        retval = { 'message': 'ok' }
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v2/nodes/{node_id}'
+        if node_version != '':
+            apiendpoint += f'/versions/{node_version}'
+        apiendpoint += '/content'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        auth_header = ''
+        auth_ticket = ''
+        if self.__login_type == LoginType.OTCS_TICKET:
+            auth_header = 'OTCSTicket'
+            auth_ticket = self.__ticket
+        elif self.__login_type == LoginType.OTDS_TICKET:
+            auth_header = 'OTDSTicket'
+            auth_ticket = self.__ticket
+        else:
+            auth_header = 'Authorization'
+            auth_ticket = f'Bearer {self.__ticket}'
+
+        # download content into local file
+        try:
+            with requests.get(url=url, headers={'Content-Type': 'application/json', auth_header: auth_ticket, 'User-Agent': self.__useragent}, stream=True) as r:
+                r.raise_for_status()
+                file_size = 0
+                if self.__logger:
+                    self.__pretty_print_GET(r.request)
+                with open(os.path.join(local_folder, local_filename), 'wb') as f:
+                    for chunk in r.iter_content(chunk_size=8192):
+                        # If you have chunk encoded response uncomment if
+                        # and set chunk_size parameter to None.
+                        # if chunk:
+                        file_size += len(chunk)
+                        f.write(chunk)
+
+                retval['file_size'] = file_size
+                retval['location'] = os.path.join(local_folder, local_filename)
+
+                if self.__logger:
+                    self.__logger.debug(f'-----------RESPONSE-----------\r\n{retval}')
+
+        except Exception as innerErr:
+            error_message = f'Error in node_download() -> {url}: {innerErr}\n{r.text}'
+            if self.__logger:
+                self.__logger.error(error_message)
+            raise Exception(error_message)
+
+        return retval
+
+    def node_download_bytes(self, base_url_cs: str, node_id: int, node_version: str) -> dict:
+        """ Download Node Content as Byte Array.
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            node_id (int):
+                The Node ID to get the information
+
+            node_version (str):
+                Optionally the version of the node
+
+        Returns:
+            dict: result of download with structure {'message', 'file_size', 'base64' }
+
+        """
+        retval = { 'message': 'ok' }
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v2/nodes/{node_id}'
+        if node_version != '':
+            apiendpoint += f'/versions/{node_version}'
+        apiendpoint += '/content'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        auth_header = ''
+        auth_ticket = ''
+        if self.__login_type == LoginType.OTCS_TICKET:
+            auth_header = 'OTCSTicket'
+            auth_ticket = self.__ticket
+        elif self.__login_type == LoginType.OTDS_TICKET:
+            auth_header = 'OTDSTicket'
+            auth_ticket = self.__ticket
+        else:
+            auth_header = 'Authorization'
+            auth_ticket = f'Bearer {self.__ticket}'
+
+        # download content into local file
+        try:
+            with requests.get(url=url, headers={'Content-Type': 'application/json', auth_header: auth_ticket, 'User-Agent': self.__useragent}, stream=True) as r:
+                r.raise_for_status()
+                file_size = 0
+                if self.__logger:
+                    self.__pretty_print_GET(r.request)
+
+                b = bytearray()
+                for chunk in r.iter_content(chunk_size=8192):
+                    # If you have chunk encoded response uncomment if
+                    # and set chunk_size parameter to None.
+                    # if chunk:
+                    file_size += len(chunk)
+                    b.extend(chunk)
+
+                retval['file_size'] = file_size
+                retval['base64'] = base64.b64encode(b).decode()
+
+                if self.__logger:
+                    self.__logger.debug(f'-----------RESPONSE-----------\r\n{retval}')
+
+        except Exception as innerErr:
+            error_message = f'Error in node_download() -> {url}: {innerErr}\n{r.text}'
+            if self.__logger:
+                self.__logger.error(error_message)
+            raise Exception(error_message)
+
+        return retval
+
+    def node_upload_file(self, base_url_cs: str, parent_id: int, local_folder: str, local_filename: str, remote_filename: str, categories: dict) -> int:
+        """ Upload Document into Content Server from a Local File.
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            parent_id (int):
+                The parent id of container to which the document is uploaded.
+
+            local_folder (str):
+                The local path to store the file.
+
+            local_filename (str):
+                The local file name of the document.
+
+            remote_filename (str):
+                The remote file name of the document.
+
+            categories (dict):
+                Optional categories of the document. I.e. { "30724_2": "2023-03-20" }
+
+        Returns:
+            int: the new node id of the uploaded document
+
+        """
+        retval = -1
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v2/nodes'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        data = { 'type': 144, 'parent_id': parent_id, 'name': remote_filename }
+        if categories:
+            data['roles'] = { 'categories': categories }
+        params = { 'body' : json.dumps(data) }
+
+        files = {'file': (remote_filename, open(os.path.join(local_folder, local_filename), 'rb'), 'application/octet-stream')}
+
+        res = self.call_post_form_data(url, params, files)
+
+        jres = json.loads(res)
+
+        if jres and jres.get('results', {}) and jres['results'].get('data', {}) and  jres['results']['data'].get('properties', {}):
+            retval = jres['results']['data']['properties'].get('id', -1)
+
+        return retval
+
+    def node_upload_bytes(self, base_url_cs: str, parent_id: int, content_bytes: bytes, remote_filename: str, categories: dict) -> int:
+        """ Upload Document into Content Server as Byte Array.
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            parent_id (int):
+                The parent id of container to which the document is uploaded.
+
+            content_bytes (bytes):
+                The bytearray containing the file's content.
+
+            remote_filename (str):
+                The remote file name of the document.
+
+            categories (dict):
+                Optional categories of the document. I.e. { "30724_2": "2023-03-20" }
+
+        Returns:
+            int: the new node id of the uploaded document
+
+        """
+        retval = -1
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v2/nodes'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        data = { 'type': 144, 'parent_id': parent_id, 'name': remote_filename }
+        if categories:
+            data['roles'] = { 'categories': categories }
+        params = { 'body' : json.dumps(data) }
+
+        files = {'file': (remote_filename, content_bytes, 'application/octet-stream')}
+
+        res = self.call_post_form_data(url, params, files)
+
+        jres = json.loads(res)
+
+        if jres and jres.get('results', {}) and jres['results'].get('data', {}) and  jres['results']['data'].get('properties', {}):
+            retval = jres['results']['data']['properties'].get('id', -1)
+
+        return retval
+
+    def node_classifications_get(self, base_url_cs: str, node_id: int, filter_fields: list) -> list:
         """ Get Classifications of Node.
 
         Args:
@@ -553,8 +1165,7 @@ class CSRestAPI:
 
         return retval
 
-    # todo: paging
-    def subnodes_get(self, base_url_cs: str, node_id: int, filter_properties: list, load_categories: bool, load_permissions: bool, load_classifications: bool) -> list:
+    def subnodes_get(self, base_url_cs: str, node_id: int, filter_properties: list, load_categories: bool, load_permissions: bool, load_classifications: bool, page: int) -> dict:
         """ Get Sub Nodes - optionally include property filter, load category information, load permissions, load classifications.
 
         Args:
@@ -565,7 +1176,7 @@ class CSRestAPI:
                 The Parent Node ID to load the Sub Nodes
 
             filter_properties (list):
-                The List to fetch only certain properties. I.e. ['id', 'name']
+                The List to fetch only certain properties. I.e. ['id', 'name'] or ['id', 'name', 'type', 'type_name', 'name_multilingual', 'description_multilingual'] or [] for all properties
 
             load_categories (bool):
                 Optionally load categories of nodes.
@@ -576,14 +1187,19 @@ class CSRestAPI:
             load_classifications (bool):
                 Optionally load classifications of nodes.
 
+            page (int):
+                The page number to fetch in the results
+
         Returns:
-            list: list of sub nodes with structure: [{ 'properties': {}, 'categories': [], 'permissions': [], 'classifications': []}]
+            dict: list of sub nodes with structure: { 'results': [{ 'properties': {}, 'categories': [], 'permissions': [], 'classifications': []}], 'page_total': 0 }
 
         """
-        retval = []
+        retval = { 'results': [], 'page_total': 0 }
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/nodes/{node_id}/nodes'
         url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        limit = 200
 
         params = {}
         if filter_properties and len(filter_properties) > 0:
@@ -597,6 +1213,7 @@ class CSRestAPI:
                 params['fields'] = []
             param = 'categories'
             params['fields'].append(param)
+            limit = 20
 
         if load_permissions:
             if not params.get('fields'):
@@ -606,7 +1223,14 @@ class CSRestAPI:
             if not params.get('expand'):
                 params['expand'] = []
             params['expand'].append('permissions{right_id}')
+            limit = 20
 
+        if load_classifications:
+            limit = 10
+
+        params['limit'] = limit
+        if page and page > 0:
+            params['page'] = page
 
         res = self.call_get(url, params)
 
@@ -624,14 +1248,18 @@ class CSRestAPI:
                         line['permissions'] = item["data"].get('permissions', [])
 
                     if load_classifications and item["data"]["properties"].get('id'):
-                        line['classifications'] = self.classifications_get(base_url_cs, item["data"]["properties"].get('id'), ['data'])
+                        line['classifications'] = self.node_classifications_get(base_url_cs, item["data"]["properties"].get('id'), ['data'])
 
-                    retval.append(line)
+                    retval['results'].append(line)
+
+
+            if jres.get('collection', {}) and jres['collection'].get('paging', {}) and jres['collection']['paging'].get('page_total'):
+                retval['page_total'] = jres['collection']['paging']['page_total']
 
         return retval
 
     def subnodes_filter(self, base_url_cs: str, node_id: int, filter_name: str, filter_container_only: bool, exact_match: bool) -> list:
-        """ Filter for specific Sub Nodes.
+        """ Filter for specific Sub Nodes. Max 200 entries are returned.
 
         Args:
             base_url_cs (str):
@@ -679,7 +1307,7 @@ class CSRestAPI:
 
         return retval
 
-    def category_get(self, base_url_cs: str, node_id: int) -> dict:
+    def category_definition_get(self, base_url_cs: str, node_id: int) -> dict:
         """ Get Classifications of Node.
 
         Args:
@@ -773,7 +1401,7 @@ class CSRestAPI:
         """
         retval = { 'main_name': '', 'main_id': 0, 'map_names': {}, 'map_ids': {}}
 
-        res = self.category_get(base_url_cs, node_id)
+        res = self.category_definition_get(base_url_cs, node_id)
 
         category_name = res.get('properties', {}).get('name')
         category_id = res.get('properties', {}).get('id')
@@ -895,9 +1523,8 @@ class CSRestAPI:
 
         return retval
 
-    # todo: paging
-    def search(self, base_url_cs: str, search_term: str, sub_type: int, location_node: int) -> list:
-        """ Search for a node in Content Server
+    def search(self, base_url_cs: str, search_term: str, sub_type: int, location_node: int, page: int) -> dict:
+        """ Search in Content Server
 
         Args:
             base_url_cs (str):
@@ -912,16 +1539,22 @@ class CSRestAPI:
             location_node (int):
                 The location (node_id) to be search in
 
+            page (int):
+                The page number to fetch in the results
+
         Returns:
-            list: found nodes that correspond to the search criteria with structure: [{'id', 'name', 'parent_id'}]
+            dict: found nodes that correspond to the search criteria with structure: { 'results': [{'id', 'name', 'parent_id'}], 'page_total': 0 }
 
         """
-        retval = []
+        retval = { 'results': [], 'page_total': 0 }
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/search'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
-        params = { 'body': json.dumps({ 'where': f'OTName: "{search_term.replace('"', '\"')}" and OTSubType: {sub_type} and OTLocation: {location_node}' })}
+        params = { 'body': json.dumps({ 'limit': 100, 'where': f'OTName: "{search_term.replace('"', '\"')}" and OTSubType: {sub_type} and OTLocation: {location_node}' })}
+
+        if page and page > 0:
+            params['page'] = page
 
         res = self.call_post_form_url_encoded(url, params)
 
@@ -931,13 +1564,68 @@ class CSRestAPI:
             for item in jres.get('results', []):
                 if item.get('data', {}) and item.get('data', {}).get('properties', {}):
                     line = {'id': item["data"]["properties"].get("id"), 'name': item["data"]["properties"].get("name"), 'parent_id': item["data"]["properties"].get("parent_id")}
-                    retval.append(line)
+                    retval['results'].append(line)
+
+            if jres.get('collection', {}) and jres['collection'].get('paging', {}) and jres['collection']['paging'].get('page_total'):
+                retval['page_total'] = jres['collection']['paging']['page_total']
 
         return retval
 
     # todo: implement
-    def download(self):
+    def node_category_update(self):
+        # i.e.: category
         pass
 
-    def upload(self):
+    def node_category_delete(self):
+        # i.e.: category
+        pass
+
+    def node_classifiction_update(self):
+        # i.e.: category
+        pass
+
+    def node_classifiction_delete(self):
+        # i.e.: category
+        pass
+
+
+
+
+
+    def category_attribute_id_get(self, category_path: str, attribute_name: str) -> str:
+        # save category_path into hash
+        pass
+
+    def bws_doc_types_get(self):
+        pass
+
+    def bws_hr_upload_file(self):
+        pass
+
+    def bws_hr_upload_bytes(self):
+        pass
+
+    def node_category_save(self):
+        pass
+
+    def node_category_remove(self):
+        pass
+
+    def node_classification_add(self):
+        pass
+
+    def node_classification_remove(self):
+        pass
+
+    def node_permissions_save(self):
+        # OwnerPermissions, GroupPermissions, PublicPermissions, CustomPermissions
+        pass
+
+    def bws_template_doc_type_rules_get(self):
+        pass
+
+    def bws_template_doc_type_rules_create(self):
+        pass
+
+    def bws_template_doc_type_rules_update(self):
         pass
