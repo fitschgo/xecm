@@ -27,6 +27,7 @@ class CSRestAPI:
     __pwd = ''
     __login_type: LoginType
     __volumes_hash = {}
+    __category_hash = {}
 
     def __init__(
         self,
@@ -1123,6 +1124,106 @@ class CSRestAPI:
 
         return retval
 
+    def node_category_add(self, base_url_cs: str, node_id: int, category: dict) -> int:
+        """ Apply Category to a Node.
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            node_id (int):
+                The node id to which the category is applied.
+
+            category (str):
+                The category values. I.e. {"category_id":9830} (apply category and use default values) or {"category_id":9830,"9830_2":"new value"} (apply category and set a value) or {"category_id":9830,"9830_3_2_4":["","","new value"]} (apply category and set values in a set of a text field)
+
+        Returns:
+            int: the node id of the changed node
+
+        """
+        retval = -1
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v2/nodes/{node_id}/categories'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        params = {'body': json.dumps(category)}
+
+        res = self.call_post_form_url_encoded(url, params)
+
+        jres = json.loads(res)
+
+        if jres:
+            retval = node_id
+
+        return retval
+
+    def node_category_update(self, base_url_cs: str, node_id: int, category_id: int, category: dict) -> int:
+        """ Update Category values of a Node.
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            node_id (int):
+                The node id to which the category is applied.
+
+            category_id (int):
+                The category id to which the values are applied.
+
+            category (str):
+                The category values. I.e. {"category_id":9830} (apply category and use default values) or {"category_id":9830,"9830_2":"new value"} (apply category and set a value) or {"category_id":9830,"9830_3_2_4":["","","new value"]} (apply category and set values in a set of a text field)
+
+        Returns:
+            int: the node id of the changed node
+
+        """
+        retval = -1
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v2/nodes/{node_id}/categories/{category_id}'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        params = {'body': json.dumps(category)}
+
+        res = self.call_put(url, params)
+
+        jres = json.loads(res)
+
+        if jres:
+            retval = node_id
+
+        return retval
+
+    def node_category_delete(self, base_url_cs: str, node_id: int, category_id: int) -> int:
+        """ Delete a Category from a Node.
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            node_id (int):
+                The node id to which the category is applied.
+
+            category_id (int):
+                The category id which is removed from the node.
+
+        Returns:
+            int: the node id of the changed node
+
+        """
+        retval = -1
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v2/nodes/{node_id}/categories/{category_id}'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        res = self.call_delete(url)
+
+        jres = json.loads(res)
+
+        if jres:
+            retval = node_id
+
+        return retval
+
     def node_classifications_get(self, base_url_cs: str, node_id: int, filter_fields: list) -> list:
         """ Get Classifications of Node.
 
@@ -1162,6 +1263,42 @@ class CSRestAPI:
                     if item.get('cell_metadata'):
                         del item['cell_metadata']
                     retval.append(item)
+
+        return retval
+
+    def node_classifications_apply(self, base_url_cs: str, node_id: int, apply_to_subitems: bool, classification_ids: list) -> int:
+        """ Apply (Update/Delete) Classifications to Node.
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            node_id (int):
+                The Node ID to get the information
+
+            apply_to_subitems (bool):
+                If set, apply the classifications to all sub-items.
+
+            classification_ids (list):
+                The List of classifications to be added to the node. I.e. [120571,120570]
+
+        Returns:
+            list: list of classifications
+
+        """
+        retval = -1
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v1/nodes/{node_id}/classifications'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        data = { 'apply_to_sub_items': apply_to_subitems, 'class_id': classification_ids}
+        params = { 'body': json.dumps(data) }
+
+        res = self.call_post_form_url_encoded(url, params)
+
+        jres = json.loads(res)
+
+        retval = node_id
 
         return retval
 
@@ -1523,6 +1660,35 @@ class CSRestAPI:
 
         return retval
 
+    def member_get(self, base_url_cs: str, group_id: int) -> dict:
+        """ Get Information on a Group Member
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            group_id (int):
+                The Group ID.
+
+        Returns:
+            dict: Details of the Member Group
+
+        """
+        retval = []
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v1/members/{group_id}'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        params = { 'expand': 'member' }
+
+        res = self.call_get(url, params)
+
+        jres = json.loads(res)
+
+        retval = jres.get('data', {})
+
+        return retval
+
     def search(self, base_url_cs: str, search_term: str, sub_type: int, location_node: int, page: int) -> dict:
         """ Search in Content Server
 
@@ -1571,61 +1737,613 @@ class CSRestAPI:
 
         return retval
 
+    def category_attribute_id_get(self, base_url_cs: str, category_path: str, attribute_name: str) -> dict:
+        """ Get ID and Name of a Node by Path Information
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            category_path (str):
+                The path of the category. I.e. Content Server Categories:SuccessFactors:OTHCM_WS_Employee_Categories:Personal Information
+
+            attribute_name (str):
+                The attribute name inside the category. I.e. 'User ID' or 'Personnel Number'
+
+        Returns:
+            dict: ID, Name of the category and Attribute Key of the attribute_name. I.e. {'category_id': 30643, 'category_name': 'Personal Information', 'attribute_key': '30643_26', 'attribute_name': 'User ID'}
+
+        """
+        retval = {}
+        if not self.__category_hash or base_url_cs not in self.__category_hash:
+            self.__category_hash[base_url_cs] = { 'category_path_to_id': {} }
+
+        if category_path not in self.__category_hash[base_url_cs]['category_path_to_id']:
+            res = self.path_to_id(base_url_cs, category_path)
+            if res and res.get('id', 0):
+                cat_id = res.get('id', 0)
+                self.__category_hash[base_url_cs]['category_path_to_id'][category_path] = { 'category_id': cat_id, 'category_name': res.get('name', ''), 'attribute_map': {}}
+                res = self.category_get_mappings(base_url_cs, res.get('id', 0))
+                if res and res.get('map_names', {}):
+                    self.__category_hash[base_url_cs]['category_path_to_id'][category_path]['attribute_map'] = res.get('map_names', {})
+                else:
+                    raise Exception(f'Error in category_attribute_id_get() -> {category_path} not found. ID = {cat_id}.')
+            else:
+                raise Exception(f'Error in category_attribute_id_get() -> {category_path} not found. Call to path_to_id() returned an empty result.')
+
+        cat_id = self.__category_hash[base_url_cs]['category_path_to_id'][category_path]['category_id']
+        retval['category_id'] = cat_id
+        retval['category_name'] = self.__category_hash[base_url_cs]['category_path_to_id'][category_path]['category_name']
+        if attribute_name in self.__category_hash[base_url_cs]['category_path_to_id'][category_path]['attribute_map']:
+            retval['attribute_key'] = self.__category_hash[base_url_cs]['category_path_to_id'][category_path]['attribute_map'][attribute_name]
+            retval['attribute_name'] = attribute_name
+        else:
+            raise Exception(f'Error in category_attribute_id_get() -> attribute "{attribute_name}" not found in ({cat_id}) {category_path}.')
+
+        return retval
+
+    def smartdoctypes_get_all(self, base_url_cs: str) -> list:
+        """ Get all Smart Document Types of Content Server
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+        Returns:
+            list: all available Smart Document Types of Content Server
+
+        """
+        retval = []
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v2/smartdocumenttypes'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        params = {}
+
+        res = self.call_get(url, params)
+
+        jres = json.loads(res)
+
+        if jres and jres.get('results', {}) and jres['results'].get('data', []):
+            retval = jres['results'].get('data', [])
+
+        return retval
+
+    def smartdoctypes_rules_get(self, base_url_cs: str, smartdoctype_id: int) -> list:
+        """ Get Rules of a specific Smart Document Type
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            smartdoctype_id (int):
+                The Smart Document Type ID to get the details.
+
+        Returns:
+            list: Rules for the Smart Document Type
+
+        """
+        retval = []
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v2/smartdocumenttypes/smartdocumenttypedetails'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        params = { 'smart_document_type_id': smartdoctype_id }
+
+        res = self.call_get(url, params)
+
+        jres = json.loads(res)
+
+        if jres and jres.get('results', {}) and jres['results'].get('data', []):
+            retval = jres['results'].get('data', [])
+
+        return retval
+
+    def smartdoctype_rule_detail_get(self, base_url_cs: str, rule_id: int) -> list:
+        """ Get the details of a specific Smart Document Type Rule
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            rule_id (int):
+                The Rule ID to get the details.
+
+        Returns:
+            list: Get Details of the Smart Document Type Rule
+
+        """
+        retval = []
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v2/smartdocumenttypes/rules/{rule_id}/bots'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        params = {}
+
+        res = self.call_get(url, params)
+
+        jres = json.loads(res)
+
+        if jres and jres.get('results', {}) and jres['results'].get('forms', []):
+            retval = jres['results'].get('forms', [])
+
+        return retval
+
+    def smartdoctype_add(self, base_url_cs: str, parent_id: int, classification_id: int, smartdoctype_name: str) -> int:
+        """ Add a new Smart Document Type
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            parent_id (int):
+                The Parent ID of the container in which the Smart Document Type is created.
+
+            classification_id (int):
+                The Classification ID the Smart Document Type is referred.
+
+            smartdoctype_name (str):
+                The Name of the Smart Document Type.
+
+        Returns:
+            int: the ID of the Smart Document Type
+
+        """
+        retval = -1
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v1/nodes'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+        data = {'type': 877, 'type_name': 'Add Smart Document Type', 'container': True, 'parent_id': parent_id, 'inactive': True, 'classificationId': classification_id, 'anchorTitle': '', 'anchorTitleShort': smartdoctype_name, 'name': smartdoctype_name, 'classification': classification_id}
+        params = {'body': json.dumps(data)}
+
+        res = self.call_post_form_url_encoded(url, params)
+
+        jres = json.loads(res)
+        retval = jres.get('id', -1)
+
+        return retval
+
+    def smartdoctype_workspacetemplate_add(self, base_url_cs: str, smartdoctype_id: int, classification_id: int, workspacetemplate_id: int) -> dict:
+        """ Add a new Smart Document Type
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            smartdoctype_id (int):
+                The Node ID of the Smart Document Type.
+
+            classification_id (int):
+                The Classification ID the Smart Document Type is referred.
+
+            workspacetemplate_id (int):
+                The Workspace Template ID.
+
+        Returns:
+            dict: the result of the action. I.e. {'is_othcm_template': True, 'ok': True, 'rule_id': 11, 'statusCode': 200}
+
+        """
+        retval = {}
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v2/smartdocumenttypes/rules'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        params = { 'smart_document_type_id': smartdoctype_id, 'classification_id': classification_id, 'template_id': workspacetemplate_id}
+
+        res = self.call_post_form_data(url, params, {})
+
+        jres = json.loads(res)
+        retval = jres.get('results', {})
+
+        return retval
+
+    def smartdoctype_rule_context_save(self, base_url_cs: str, rule_id: int, based_on_category_id: int, location_id: int) -> dict:
+        """ Add/update the Set Context tab for a Smart Document Type Rule
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            rule_id (int):
+                The Rule ID to update.
+
+            based_on_category_id (int):
+                The Category ID for the document metadata. I.e. default category can be found under: Content Server Categories:Document Types:Document Type Details
+
+            location_id (int):
+                The Target Location ID in the workspace template.
+
+        Returns:
+            dict: the result of the action. I.e. {'ok': True, 'statusCode': 200, 'updatedAttributeIds': [2], 'updatedAttributeNames': ['Date of Origin']}
+
+        """
+        retval = {}
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v2/smartdocumenttypes/rules/{rule_id}/bots/context'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        data = {'location': location_id, 'based_on_category': str(based_on_category_id), 'rule_expression': {'expressionText': '', 'expressionData': [], 'expressionDataKey': ''}, 'bot_action': 'update'}
+        params = {'body': json.dumps(data)}
+
+        res = self.call_put(url, params)
+
+        jres = json.loads(res)
+
+        retval = jres.get('results', {})
+
+        return retval
+
+    def smartdoctype_rule_mandatory_save(self, base_url_cs: str, rule_id: int, is_mandatory: bool, bot_action: str) -> dict:
+        """ Add/update the Make Mandatory tab for a Smart Document Type Rule
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            rule_id (int):
+                The Rule ID to update.
+
+            is_mandatory (bool):
+                The mandatory flag to be set.
+
+            bot_action (str):
+                The action: use 'add' to create the tab or 'update' to update the values.
+
+        Returns:
+            dict: the result of the action. I.e. {'ok': True, 'statusCode': 200}
+
+        """
+        retval = {}
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v2/smartdocumenttypes/rules/{rule_id}/bots/makemandatory'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        data = {'mandatory': is_mandatory, 'bot_action': bot_action}
+        params = {'body': json.dumps(data)}
+
+        res = self.call_put(url, params)
+
+        jres = json.loads(res)
+
+        retval = jres.get('results', {})
+
+        return retval
+
+    def smartdoctype_rule_mandatory_delete(self, base_url_cs: str, rule_id: int) -> dict:
+        """ Delete the Make Mandatory tab from a Smart Document Type Rule
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            rule_id (int):
+                The Rule ID to update.
+
+        Returns:
+            dict: the result of the action. I.e. {'ok': True, 'statusCode': 200}
+
+        """
+        retval = {}
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v2/smartdocumenttypes/rules/{rule_id}/bots/makemandatory'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        res = self.call_delete(url)
+
+        jres = json.loads(res)
+
+        retval = jres.get('results', {})
+
+        return retval
+
+    def smartdoctype_rule_documentexpiration_save(self, base_url_cs: str, rule_id: int, validity_required: bool, based_on_attribute: int, num_years: int, num_months: int, bot_action: str) -> dict:
+        """ Add/update the Check Document Expiration tab for a Smart Document Type Rule
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            rule_id (int):
+                The Rule ID to update.
+
+            validity_required (bool):
+                Is Validity Check Reqired.
+
+            based_on_attribute (int):
+                Attribute Number for i.e. Date Of Origin to calculate the expiration date. I.e. 2 if default "Category Document Type" Details is used.
+
+            num_years (int):
+                Number of years validity.
+
+            num_months (int):
+                Number of months validity.
+
+            bot_action (str):
+                The action: use 'add' to create the tab or 'update' to update the values.
+
+        Returns:
+            dict: the result of the action. I.e. {'ok': True, 'statusCode': 200, 'updatedAttributeIds': [2], 'updatedAttributeNames': ['Date of Origin']}
+
+        """
+        retval = {}
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v2/smartdocumenttypes/rules/{rule_id}/bots/completenesscheck'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        data = {'validity_required': validity_required, 'based_on_attribute': str(based_on_attribute), 'validity_years': num_years, 'validity_months': str(num_months), 'bot_action': bot_action}
+        params = {'body': json.dumps(data)}
+
+        res = self.call_put(url, params)
+
+        jres = json.loads(res)
+
+        retval = jres.get('results', {})
+
+        return retval
+
+    def smartdoctype_rule_documentexpiration_delete(self, base_url_cs: str, rule_id: int) -> dict:
+        """ Delete the Check Document Expiration tab from a Smart Document Type Rule
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            rule_id (int):
+                The Rule ID to update.
+
+        Returns:
+            dict: the result of the action. I.e. {'ok': True, 'statusCode': 200}
+
+        """
+        retval = {}
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v2/smartdocumenttypes/rules/{rule_id}/bots/completenesscheck'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        res = self.call_delete(url)
+
+        jres = json.loads(res)
+
+        retval = jres.get('results', {})
+
+        return retval
+
+    def smartdoctype_rule_generatedocument_save(self, base_url_cs: str, rule_id: int, is_doc_gen: bool, bot_action: str) -> dict:
+        """ Add/update the Generate Document tab for a Smart Document Type Rule
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            rule_id (int):
+                The Rule ID to update.
+
+            is_doc_gen (bool):
+                The document generation flag to be set.
+
+            bot_action (str):
+                The action: use 'add' to create the tab or 'update' to update the values.
+
+        Returns:
+            dict: the result of the action. I.e. {'ok': True, 'statusCode': 200}
+
+        """
+        retval = {}
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v2/smartdocumenttypes/rules/{rule_id}/bots/createdocument'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        data = {'docgen': is_doc_gen, 'bot_action': bot_action}
+        params = {'body': json.dumps(data)}
+
+        res = self.call_put(url, params)
+
+        jres = json.loads(res)
+
+        retval = jres.get('results', {})
+
+        return retval
+
+    def smartdoctype_rule_generatedocument_delete(self, base_url_cs: str, rule_id: int) -> dict:
+        """ Delete the Generate Document tab from a Smart Document Type Rule
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            rule_id (int):
+                The Rule ID to update.
+
+        Returns:
+            dict: the result of the action. I.e. {'ok': True, 'statusCode': 200}
+
+        """
+        retval = {}
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v2/smartdocumenttypes/rules/{rule_id}/bots/createdocument'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        res = self.call_delete(url)
+
+        jres = json.loads(res)
+
+        retval = jres.get('results', {})
+
+        return retval
+
+    def smartdoctype_rule_allowupload_save(self, base_url_cs: str, rule_id: int, members: list, bot_action: str) -> dict:
+        """ Add/update the Allow Upload tab for a Smart Document Type Rule
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            rule_id (int):
+                The Rule ID to update.
+
+            members (list):
+                The list of groups to be set.
+
+            bot_action (str):
+                The action: use 'add' to create the tab or 'update' to update the values.
+
+        Returns:
+            dict: the result of the action. I.e. {'ok': True, 'statusCode': 200}
+
+        """
+        retval = {}
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v2/smartdocumenttypes/rules/{rule_id}/bots/uploadcontrol'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        members_data = []
+        for grp in members:
+            grp_details = self.member_get(base_url_cs, grp)
+            memb = grp_details.copy()
+            memb['data'] = {}
+            memb['data']['properties'] = grp_details.copy()
+            members_data.append(memb)
+
+
+        data = {'member': members, 'bot_action': bot_action, 'membersData': members_data}
+        params = {'body': json.dumps(data)}
+
+        res = self.call_put(url, params)
+
+        jres = json.loads(res)
+
+        retval = jres.get('results', {})
+
+        return retval
+
+    def smartdoctype_rule_allowupload_delete(self, base_url_cs: str, rule_id: int) -> dict:
+        """ Delete the Allow Upload tab from a Smart Document Type Rule
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            rule_id (int):
+                The Rule ID to update.
+
+        Returns:
+            dict: the result of the action. I.e. {'ok': True, 'statusCode': 200}
+
+        """
+        retval = {}
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v2/smartdocumenttypes/rules/{rule_id}/bots/uploadcontrol'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        res = self.call_delete(url)
+
+        jres = json.loads(res)
+
+        retval = jres.get('results', {})
+
+        return retval
+
+    def smartdoctype_rule_uploadapproval_save(self, base_url_cs: str, rule_id: int, review_required: bool, workflow_id: int, wf_roles: list, bot_action: str) -> dict:
+        """ Add/update the Upload with Approval tab for a Smart Document Type Rule. An additional Workflow Map is required with the Map > General > Role Implementation being set to Map Based.
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            rule_id (int):
+                The Rule ID to update.
+
+            review_required (bool):
+                The Review Required flag to be set.
+
+            workflow_id (int):
+                The Workflow ID of the Approval Flow.
+
+            wf_roles (list):
+                The list of workflow roles to be set. I.e. [{'wfrole': 'Approver', 'member': 2001 }]
+
+            bot_action (str):
+                The action: use 'add' to create the tab or 'update' to update the values.
+
+        Returns:
+            dict: the result of the action. I.e. {'ok': True, 'statusCode': 200}
+
+        """
+        retval = {}
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v2/smartdocumenttypes/rules/{rule_id}/bots/uploadwithapproval'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        role_hash = {}
+        for role in wf_roles:
+            if role['wfrole'] not in role_hash:
+                role_hash[role['wfrole']] = []
+            role_hash[role['wfrole']].append(role['member'])
+
+        role_mappings = []
+        for role_key in role_hash:
+            role_map = { 'workflowRole': role_key, 'member': 0, 'membersData': [] }
+
+            for group_id in role_hash[role_key]:
+                # role_map['member'].append(group_id)
+                role_map['member'] = group_id
+                grp_details = self.member_get(base_url_cs, group_id)
+                memb = grp_details.copy()
+                memb['data'] = {}
+                memb['data']['properties'] = grp_details.copy()
+                role_map['membersData'].append(memb)
+
+            role_mappings.append(role_map)
+
+        data = {'review_required': review_required, 'review_workflow_location': workflow_id, 'role_mappings': role_mappings, 'bot_action': bot_action}
+        params = {'body': json.dumps(data)}
+
+        res = self.call_put(url, params)
+
+        jres = json.loads(res)
+
+        retval = jres.get('results', {})
+
+        return retval
+
+    def smartdoctype_rule_uploadapproval_delete(self, base_url_cs: str, rule_id: int) -> dict:
+        """ Delete the Upload with Approval tab from a Smart Document Type Rule
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            rule_id (int):
+                The Rule ID to update.
+
+        Returns:
+            dict: the result of the action. I.e. {'ok': True, 'statusCode': 200}
+
+        """
+        retval = {}
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v2/smartdocumenttypes/rules/{rule_id}/bots/uploadwithapproval'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        res = self.call_delete(url)
+
+        jres = json.loads(res)
+
+        retval = jres.get('results', {})
+
+        return retval
+
+
     # todo: implement
-    def node_category_update(self):
-        # i.e.: category
-        pass
-
-    def node_category_delete(self):
-        # i.e.: category
-        pass
-
-    def node_classifiction_update(self):
-        # i.e.: category
-        pass
-
-    def node_classifiction_delete(self):
-        # i.e.: category
-        pass
-
-
-
-
-
-    def category_attribute_id_get(self, category_path: str, attribute_name: str) -> str:
-        # save category_path into hash
-        pass
-
-    def bws_doc_types_get(self):
-        pass
-
     def bws_hr_upload_file(self):
         pass
+
 
     def bws_hr_upload_bytes(self):
         pass
 
-    def node_category_save(self):
-        pass
 
-    def node_category_remove(self):
-        pass
-
-    def node_classification_add(self):
-        pass
-
-    def node_classification_remove(self):
-        pass
-
-    def node_permissions_save(self):
+    def node_permissions_apply(self):
         # OwnerPermissions, GroupPermissions, PublicPermissions, CustomPermissions
         pass
 
-    def bws_template_doc_type_rules_get(self):
-        pass
-
-    def bws_template_doc_type_rules_create(self):
-        pass
-
-    def bws_template_doc_type_rules_update(self):
-        pass
