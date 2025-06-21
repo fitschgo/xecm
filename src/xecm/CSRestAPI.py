@@ -11,6 +11,7 @@ import enum
 import urllib.parse
 import json
 import os
+from datetime import datetime
 
 class LoginType(enum.Enum):
     OTCS_TICKET = enum.auto()
@@ -629,6 +630,8 @@ class CSRestAPI:
             dict: node information with structure: { 'properties': {}, 'categories': [], 'permissions': [], 'classifications': []}
 
         """
+        if self.__logger:
+            self.__logger.debug(f'node_get() start: {locals()}')
         retval = { 'properties': {}, 'categories': [], 'permissions': [], 'classifications': []}
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/nodes/{node_id}'
@@ -675,6 +678,9 @@ class CSRestAPI:
                 if load_classifications:
                     retval['classifications'] = self.node_classifications_get(base_url_cs, node_id, ['data'])
 
+        if self.__logger:
+            self.__logger.debug(f'node_get() finished: {retval}')
+
         return retval
 
     def node_create(self, base_url_cs: str, parent_id: int, type_id: int, node_name:str, node_description: str, multi_names: dict, multi_descriptions: dict) -> int:
@@ -706,6 +712,8 @@ class CSRestAPI:
             int: the new node id of the uploaded document
 
         """
+        if self.__logger:
+            self.__logger.debug(f'node_create() start: {locals()}')
         retval = -1
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/nodes'
@@ -727,6 +735,9 @@ class CSRestAPI:
 
         if jres and jres.get('results', {}) and jres['results'].get('data', {}) and  jres['results']['data'].get('properties', {}):
             retval = jres['results']['data']['properties'].get('id', -1)
+
+        if self.__logger:
+            self.__logger.debug(f'node_create() finished: {retval}')
 
         return retval
 
@@ -762,6 +773,8 @@ class CSRestAPI:
             int: the node id of the updated node
 
         """
+        if self.__logger:
+            self.__logger.debug(f'node_update() start: {locals()}')
         retval = -1
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/nodes/{node_id}'
@@ -792,6 +805,9 @@ class CSRestAPI:
         if jres and jres.get('results', {}) and jres['results'].get('data', {}) and  jres['results']['data'].get('properties', {}):
             retval = jres['results']['data']['properties'].get('id', -1)
 
+        if self.__logger:
+            self.__logger.debug(f'node_update() finished: {retval}')
+
         return retval
 
     def node_update_name(self, base_url_cs: str, node_id: int, new_name: str, new_description: str, new_multi_names: dict, new_multi_descriptions: dict) -> int:
@@ -821,7 +837,15 @@ class CSRestAPI:
 
         """
 
-        return self.node_update(base_url_cs, node_id, 0, new_name, new_description, new_multi_names, new_multi_descriptions, {})
+        if self.__logger:
+            self.__logger.debug(f'node_update_name() start: {locals()}')
+
+        retval = self.node_update(base_url_cs, node_id, 0, new_name, new_description, new_multi_names, new_multi_descriptions, {})
+
+        if self.__logger:
+            self.__logger.debug(f'node_update_name() finished: {retval}')
+
+        return retval
 
     def node_move(self, base_url_cs: str, node_id: int, new_parent_id: int) -> int:
         """ Move a Node.
@@ -840,8 +864,15 @@ class CSRestAPI:
             int: the node id of the updated node
 
         """
+        if self.__logger:
+            self.__logger.debug(f'node_move() start: {locals()}')
 
-        return self.node_update(base_url_cs, node_id, new_parent_id, '', '', {}, {}, {})
+        retval = self.node_update(base_url_cs, node_id, new_parent_id, '', '', {}, {}, {})
+
+        if self.__logger:
+            self.__logger.debug(f'node_move() finished: {retval}')
+
+        return retval
 
     def node_move_and_apply_category(self, base_url_cs: str, node_id: int, new_parent_id: int, new_categories_when_moved: dict) -> int:
         """ Move a Node.
@@ -863,8 +894,15 @@ class CSRestAPI:
             int: the node id of the updated node
 
         """
+        if self.__logger:
+            self.__logger.debug(f'node_move_and_apply_category() start: {locals()}')
 
-        return self.node_update(base_url_cs, node_id, new_parent_id, '', '', {}, {}, new_categories_when_moved)
+        retval = self.node_update(base_url_cs, node_id, new_parent_id, '', '', {}, {}, new_categories_when_moved)
+
+        if self.__logger:
+            self.__logger.debug(f'node_move_and_apply_category() finished: {retval}')
+
+        return retval
 
     def node_delete(self, base_url_cs: str, node_id: int):
         """ Create a Node.
@@ -880,6 +918,8 @@ class CSRestAPI:
             int: the new node id of the uploaded document
 
         """
+        if self.__logger:
+            self.__logger.debug(f'node_delete() start: {locals()}')
         retval = {}
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/nodes/{node_id}'
@@ -891,6 +931,9 @@ class CSRestAPI:
 
         if jres and jres.get('results', {}):
             retval = jres.get('results', {})
+
+        if self.__logger:
+            self.__logger.debug(f'node_delete() finished: {retval}')
 
         return retval
 
@@ -917,6 +960,8 @@ class CSRestAPI:
             dict: result of download with structure {'message', 'file_size', 'location'}
 
         """
+        if self.__logger:
+            self.__logger.debug(f'node_download_file() start: {locals()}')
         retval = { 'message': 'ok' }
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/nodes/{node_id}'
@@ -964,6 +1009,9 @@ class CSRestAPI:
                 self.__logger.error(error_message)
             raise Exception(error_message)
 
+        if self.__logger:
+            self.__logger.debug(f'node_download_file() finished: {retval}')
+
         return retval
 
     def node_download_bytes(self, base_url_cs: str, node_id: int, node_version: str) -> dict:
@@ -983,6 +1031,8 @@ class CSRestAPI:
             dict: result of download with structure {'message', 'file_size', 'base64' }
 
         """
+        if self.__logger:
+            self.__logger.debug(f'node_download_bytes() start: {locals()}')
         retval = { 'message': 'ok' }
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/nodes/{node_id}'
@@ -1031,6 +1081,8 @@ class CSRestAPI:
                 self.__logger.error(error_message)
             raise Exception(error_message)
 
+        if self.__logger:
+            self.__logger.debug(f'node_download_bytes() finished: {retval}')
         return retval
 
     def node_upload_file(self, base_url_cs: str, parent_id: int, local_folder: str, local_filename: str, remote_filename: str, categories: dict) -> int:
@@ -1059,6 +1111,8 @@ class CSRestAPI:
             int: the new node id of the uploaded document
 
         """
+        if self.__logger:
+            self.__logger.debug(f'node_upload_file() start: {locals()}')
         retval = -1
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/nodes'
@@ -1077,6 +1131,9 @@ class CSRestAPI:
 
         if jres and jres.get('results', {}) and jres['results'].get('data', {}) and  jres['results']['data'].get('properties', {}):
             retval = jres['results']['data']['properties'].get('id', -1)
+
+        if self.__logger:
+            self.__logger.debug(f'node_upload_file() finished: {retval}')
 
         return retval
 
@@ -1103,6 +1160,8 @@ class CSRestAPI:
             int: the new node id of the uploaded document
 
         """
+        if self.__logger:
+            self.__logger.debug(f'node_upload_bytes() start: {locals()}')
         retval = -1
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/nodes'
@@ -1121,6 +1180,9 @@ class CSRestAPI:
 
         if jres and jres.get('results', {}) and jres['results'].get('data', {}) and  jres['results']['data'].get('properties', {}):
             retval = jres['results']['data']['properties'].get('id', -1)
+
+        if self.__logger:
+            self.__logger.debug(f'node_upload_bytes() finished: {retval}')
 
         return retval
 
@@ -1141,6 +1203,8 @@ class CSRestAPI:
             int: the node id of the changed node
 
         """
+        if self.__logger:
+            self.__logger.debug(f'node_category_add() start: {locals()}')
         retval = -1
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/nodes/{node_id}/categories'
@@ -1154,6 +1218,9 @@ class CSRestAPI:
 
         if jres:
             retval = node_id
+
+        if self.__logger:
+            self.__logger.debug(f'node_category_add() finished: {retval}')
 
         return retval
 
@@ -1177,6 +1244,8 @@ class CSRestAPI:
             int: the node id of the changed node
 
         """
+        if self.__logger:
+            self.__logger.debug(f'node_category_update() start: {locals()}')
         retval = -1
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/nodes/{node_id}/categories/{category_id}'
@@ -1190,6 +1259,9 @@ class CSRestAPI:
 
         if jres:
             retval = node_id
+
+        if self.__logger:
+            self.__logger.debug(f'node_category_update() finished: {retval}')
 
         return retval
 
@@ -1210,6 +1282,8 @@ class CSRestAPI:
             int: the node id of the changed node
 
         """
+        if self.__logger:
+            self.__logger.debug(f'node_category_delete() start: {locals()}')
         retval = -1
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/nodes/{node_id}/categories/{category_id}'
@@ -1221,6 +1295,9 @@ class CSRestAPI:
 
         if jres:
             retval = node_id
+
+        if self.__logger:
+            self.__logger.debug(f'node_category_delete() finished: {retval}')
 
         return retval
 
@@ -1241,6 +1318,8 @@ class CSRestAPI:
             list: list of classifications
 
         """
+        if self.__logger:
+            self.__logger.debug(f'node_classifications_get() start: {locals()}')
         retval = []
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v1/nodes/{node_id}/classifications'
@@ -1264,6 +1343,9 @@ class CSRestAPI:
                         del item['cell_metadata']
                     retval.append(item)
 
+        if self.__logger:
+            self.__logger.debug(f'node_classifications_get() finished: {retval}')
+
         return retval
 
     def node_classifications_apply(self, base_url_cs: str, node_id: int, apply_to_subitems: bool, classification_ids: list) -> int:
@@ -1286,6 +1368,8 @@ class CSRestAPI:
             list: list of classifications
 
         """
+        if self.__logger:
+            self.__logger.debug(f'node_classifications_apply() start: {locals()}')
         retval = -1
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v1/nodes/{node_id}/classifications'
@@ -1299,6 +1383,9 @@ class CSRestAPI:
         jres = json.loads(res)
 
         retval = node_id
+
+        if self.__logger:
+            self.__logger.debug(f'node_classifications_apply() finished: {retval}')
 
         return retval
 
@@ -1331,6 +1418,8 @@ class CSRestAPI:
             dict: list of sub nodes with structure: { 'results': [{ 'properties': {}, 'categories': [], 'permissions': [], 'classifications': []}], 'page_total': 0 }
 
         """
+        if self.__logger:
+            self.__logger.debug(f'subnodes_get() start: {locals()}')
         retval = { 'results': [], 'page_total': 0 }
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/nodes/{node_id}/nodes'
@@ -1393,6 +1482,9 @@ class CSRestAPI:
             if jres.get('collection', {}) and jres['collection'].get('paging', {}) and jres['collection']['paging'].get('page_total'):
                 retval['page_total'] = jres['collection']['paging']['page_total']
 
+        if self.__logger:
+            self.__logger.debug(f'subnodes_get() finished: {retval}')
+
         return retval
 
     def subnodes_filter(self, base_url_cs: str, node_id: int, filter_name: str, filter_container_only: bool, exact_match: bool) -> list:
@@ -1418,6 +1510,8 @@ class CSRestAPI:
             list: list of sub nodes with structure: [{ 'properties': {'id', 'name'}}]
 
         """
+        if self.__logger:
+            self.__logger.debug(f'subnodes_filter() start: {locals()}')
         retval = []
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/nodes/{node_id}/nodes'
@@ -1442,6 +1536,9 @@ class CSRestAPI:
                         line = {'properties': item["data"]["properties"]}
                         retval.append(line)
 
+        if self.__logger:
+            self.__logger.debug(f'subnodes_filter() finished: {retval}')
+
         return retval
 
     def category_definition_get(self, base_url_cs: str, node_id: int) -> dict:
@@ -1458,6 +1555,8 @@ class CSRestAPI:
             dict: categories of node with structure: { 'properties': {'id', 'name', 'type', 'type_name'}, 'forms': []}
 
         """
+        if self.__logger:
+            self.__logger.debug(f'category_definition_get() start: {locals()}')
         retval = { 'properties': {}, 'forms': []}
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/nodes/{node_id}'
@@ -1485,6 +1584,9 @@ class CSRestAPI:
                 else:
                     raise Exception(f'node_id {node_id} was expected to be a Category, but it is a {item["data"]["properties"].get('type_name')}')
 
+        if self.__logger:
+            self.__logger.debug(f'category_definition_get() finished: {retval}')
+
         return retval
 
     def specific_get(self, base_url_cs: str, node_id: int) -> list:
@@ -1501,6 +1603,8 @@ class CSRestAPI:
             list: specific information of node
 
         """
+        if self.__logger:
+            self.__logger.debug(f'specific_get() start: {locals()}')
         retval = []
         base_url = self.__check_url(base_url_cs)
         apiendpoint = 'api/v1/forms/nodes/properties/specific'
@@ -1520,6 +1624,9 @@ class CSRestAPI:
                     line['data'] = item["data"]
                 retval.append(line)
 
+        if self.__logger:
+            self.__logger.debug(f'specific_get() finished: {retval}')
+
         return retval
 
     def category_get_mappings(self, base_url_cs: str, node_id: int) -> dict:
@@ -1536,6 +1643,8 @@ class CSRestAPI:
             dict: dictionaries to map the ids and names of a category attributes with the structure: { 'main_name': '', 'main_id': 0, 'map_names': {}, 'map_ids': {}}
 
         """
+        if self.__logger:
+            self.__logger.debug(f'category_get_mappings() start: {locals()}')
         retval = { 'main_name': '', 'main_id': 0, 'map_names': {}, 'map_ids': {}}
 
         res = self.category_definition_get(base_url_cs, node_id)
@@ -1562,6 +1671,9 @@ class CSRestAPI:
                                     retval['map_names'][f'{field_name}:{sub_field_name}'] = sub_field_id
                                     retval['map_ids'][sub_field_id] = f'{field_name}:{sub_field_name}'
 
+        if self.__logger:
+            self.__logger.debug(f'category_get_mappings() finished: {retval}')
+
         return retval
 
     def volumes_get(self, base_url_cs: str) -> list:
@@ -1575,6 +1687,8 @@ class CSRestAPI:
             list: all available volumes of Content Server
 
         """
+        if self.__logger:
+            self.__logger.debug(f'volumes_get() start: {locals()}')
         retval = []
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/volumes'
@@ -1592,6 +1706,9 @@ class CSRestAPI:
                     line = {'properties': item["data"]["properties"]}
                     retval.append(line)
 
+        if self.__logger:
+            self.__logger.debug(f'volumes_get() finished: {retval}')
+
         return retval
 
     def path_to_id(self, base_url_cs: str, cspath: str) -> dict:
@@ -1608,6 +1725,8 @@ class CSRestAPI:
             dict: ID and Name of the last node of the given path
 
         """
+        if self.__logger:
+            self.__logger.debug(f'path_to_id() start: {locals()}')
         retval = {}
         if cspath:
             vol_name = ''
@@ -1658,6 +1777,9 @@ class CSRestAPI:
         else:
             raise Exception('Error in path_to_id() -> please provide a valid path with the format: i.e. "Content Server Categories:SuccessFactors:OTHCM_WS_Employee_Categories:Personal Information"')
 
+        if self.__logger:
+            self.__logger.debug(f'path_to_id() finished: {retval}')
+
         return retval
 
     def member_get(self, base_url_cs: str, group_id: int) -> dict:
@@ -1674,6 +1796,8 @@ class CSRestAPI:
             dict: Details of the Member Group
 
         """
+        if self.__logger:
+            self.__logger.debug(f'member_get() start: {locals()}')
         retval = []
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v1/members/{group_id}'
@@ -1686,6 +1810,9 @@ class CSRestAPI:
         jres = json.loads(res)
 
         retval = jres.get('data', {})
+
+        if self.__logger:
+            self.__logger.debug(f'member_get() finished: {retval}')
 
         return retval
 
@@ -1712,6 +1839,8 @@ class CSRestAPI:
             dict: found nodes that correspond to the search criteria with structure: { 'results': [{'id', 'name', 'parent_id'}], 'page_total': 0 }
 
         """
+        if self.__logger:
+            self.__logger.debug(f'search() start: {locals()}')
         retval = { 'results': [], 'page_total': 0 }
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/search'
@@ -1735,6 +1864,8 @@ class CSRestAPI:
             if jres.get('collection', {}) and jres['collection'].get('paging', {}) and jres['collection']['paging'].get('page_total'):
                 retval['page_total'] = jres['collection']['paging']['page_total']
 
+        if self.__logger:
+            self.__logger.debug(f'search() finished: {retval}')
         return retval
 
     def category_attribute_id_get(self, base_url_cs: str, category_path: str, attribute_name: str) -> dict:
@@ -1754,6 +1885,8 @@ class CSRestAPI:
             dict: ID, Name of the category and Attribute Key of the attribute_name. I.e. {'category_id': 30643, 'category_name': 'Personal Information', 'attribute_key': '30643_26', 'attribute_name': 'User ID'}
 
         """
+        if self.__logger:
+            self.__logger.debug(f'category_attribute_id_get() start: {locals()}')
         retval = {}
         if not self.__category_hash or base_url_cs not in self.__category_hash:
             self.__category_hash[base_url_cs] = { 'category_path_to_id': {} }
@@ -1780,6 +1913,9 @@ class CSRestAPI:
         else:
             raise Exception(f'Error in category_attribute_id_get() -> attribute "{attribute_name}" not found in ({cat_id}) {category_path}.')
 
+        if self.__logger:
+            self.__logger.debug(f'category_attribute_id_get() finished: {retval}')
+
         return retval
 
     def smartdoctypes_get_all(self, base_url_cs: str) -> list:
@@ -1793,6 +1929,8 @@ class CSRestAPI:
             list: all available Smart Document Types of Content Server
 
         """
+        if self.__logger:
+            self.__logger.debug(f'smartdoctypes_get_all() start: {locals()}')
         retval = []
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/smartdocumenttypes'
@@ -1806,6 +1944,9 @@ class CSRestAPI:
 
         if jres and jres.get('results', {}) and jres['results'].get('data', []):
             retval = jres['results'].get('data', [])
+
+        if self.__logger:
+            self.__logger.debug(f'smartdoctypes_get_all() finished: {retval}')
 
         return retval
 
@@ -1823,6 +1964,8 @@ class CSRestAPI:
             list: Rules for the Smart Document Type
 
         """
+        if self.__logger:
+            self.__logger.debug(f'smartdoctypes_rules_get() start: {locals()}')
         retval = []
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/smartdocumenttypes/smartdocumenttypedetails'
@@ -1836,6 +1979,9 @@ class CSRestAPI:
 
         if jres and jres.get('results', {}) and jres['results'].get('data', []):
             retval = jres['results'].get('data', [])
+
+        if self.__logger:
+            self.__logger.debug(f'smartdoctypes_rules_get() finished: {retval}')
 
         return retval
 
@@ -1853,6 +1999,8 @@ class CSRestAPI:
             list: Get Details of the Smart Document Type Rule
 
         """
+        if self.__logger:
+            self.__logger.debug(f'smartdoctype_rule_detail_get() start: {locals()}')
         retval = []
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/smartdocumenttypes/rules/{rule_id}/bots'
@@ -1866,6 +2014,9 @@ class CSRestAPI:
 
         if jres and jres.get('results', {}) and jres['results'].get('forms', []):
             retval = jres['results'].get('forms', [])
+
+        if self.__logger:
+            self.__logger.debug(f'smartdoctype_rule_detail_get() finished: {retval}')
 
         return retval
 
@@ -1889,6 +2040,8 @@ class CSRestAPI:
             int: the ID of the Smart Document Type
 
         """
+        if self.__logger:
+            self.__logger.debug(f'smartdoctype_add() start: {locals()}')
         retval = -1
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v1/nodes'
@@ -1900,6 +2053,9 @@ class CSRestAPI:
 
         jres = json.loads(res)
         retval = jres.get('id', -1)
+
+        if self.__logger:
+            self.__logger.debug(f'smartdoctype_add() finished: {retval}')
 
         return retval
 
@@ -1923,6 +2079,8 @@ class CSRestAPI:
             dict: the result of the action. I.e. {'is_othcm_template': True, 'ok': True, 'rule_id': 11, 'statusCode': 200}
 
         """
+        if self.__logger:
+            self.__logger.debug(f'smartdoctype_workspacetemplate_add() start: {locals()}')
         retval = {}
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/smartdocumenttypes/rules'
@@ -1934,6 +2092,9 @@ class CSRestAPI:
 
         jres = json.loads(res)
         retval = jres.get('results', {})
+
+        if self.__logger:
+            self.__logger.debug(f'smartdoctype_workspacetemplate_add() finished: {retval}')
 
         return retval
 
@@ -1957,6 +2118,8 @@ class CSRestAPI:
             dict: the result of the action. I.e. {'ok': True, 'statusCode': 200, 'updatedAttributeIds': [2], 'updatedAttributeNames': ['Date of Origin']}
 
         """
+        if self.__logger:
+            self.__logger.debug(f'smartdoctype_rule_context_save() start: {locals()}')
         retval = {}
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/smartdocumenttypes/rules/{rule_id}/bots/context'
@@ -1970,6 +2133,9 @@ class CSRestAPI:
         jres = json.loads(res)
 
         retval = jres.get('results', {})
+
+        if self.__logger:
+            self.__logger.debug(f'smartdoctype_rule_context_save() finished: {retval}')
 
         return retval
 
@@ -1993,6 +2159,8 @@ class CSRestAPI:
             dict: the result of the action. I.e. {'ok': True, 'statusCode': 200}
 
         """
+        if self.__logger:
+            self.__logger.debug(f'smartdoctype_rule_mandatory_save() start: {locals()}')
         retval = {}
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/smartdocumenttypes/rules/{rule_id}/bots/makemandatory'
@@ -2006,6 +2174,9 @@ class CSRestAPI:
         jres = json.loads(res)
 
         retval = jres.get('results', {})
+
+        if self.__logger:
+            self.__logger.debug(f'smartdoctype_rule_mandatory_save() finished: {retval}')
 
         return retval
 
@@ -2023,6 +2194,8 @@ class CSRestAPI:
             dict: the result of the action. I.e. {'ok': True, 'statusCode': 200}
 
         """
+        if self.__logger:
+            self.__logger.debug(f'smartdoctype_rule_mandatory_delete() start: {locals()}')
         retval = {}
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/smartdocumenttypes/rules/{rule_id}/bots/makemandatory'
@@ -2033,6 +2206,9 @@ class CSRestAPI:
         jres = json.loads(res)
 
         retval = jres.get('results', {})
+
+        if self.__logger:
+            self.__logger.debug(f'smartdoctype_rule_mandatory_delete() finished: {retval}')
 
         return retval
 
@@ -2065,6 +2241,8 @@ class CSRestAPI:
             dict: the result of the action. I.e. {'ok': True, 'statusCode': 200, 'updatedAttributeIds': [2], 'updatedAttributeNames': ['Date of Origin']}
 
         """
+        if self.__logger:
+            self.__logger.debug(f'smartdoctype_rule_documentexpiration_save() start: {locals()}')
         retval = {}
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/smartdocumenttypes/rules/{rule_id}/bots/completenesscheck'
@@ -2078,6 +2256,9 @@ class CSRestAPI:
         jres = json.loads(res)
 
         retval = jres.get('results', {})
+
+        if self.__logger:
+            self.__logger.debug(f'smartdoctype_rule_documentexpiration_save() finished: {retval}')
 
         return retval
 
@@ -2095,6 +2276,8 @@ class CSRestAPI:
             dict: the result of the action. I.e. {'ok': True, 'statusCode': 200}
 
         """
+        if self.__logger:
+            self.__logger.debug(f'smartdoctype_rule_documentexpiration_delete() start: {locals()}')
         retval = {}
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/smartdocumenttypes/rules/{rule_id}/bots/completenesscheck'
@@ -2105,6 +2288,9 @@ class CSRestAPI:
         jres = json.loads(res)
 
         retval = jres.get('results', {})
+
+        if self.__logger:
+            self.__logger.debug(f'smartdoctype_rule_documentexpiration_delete() finished: {retval}')
 
         return retval
 
@@ -2128,6 +2314,8 @@ class CSRestAPI:
             dict: the result of the action. I.e. {'ok': True, 'statusCode': 200}
 
         """
+        if self.__logger:
+            self.__logger.debug(f'smartdoctype_rule_generatedocument_save() start: {locals()}')
         retval = {}
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/smartdocumenttypes/rules/{rule_id}/bots/createdocument'
@@ -2141,6 +2329,9 @@ class CSRestAPI:
         jres = json.loads(res)
 
         retval = jres.get('results', {})
+
+        if self.__logger:
+            self.__logger.debug(f'smartdoctype_rule_generatedocument_save() finished: {retval}')
 
         return retval
 
@@ -2158,6 +2349,8 @@ class CSRestAPI:
             dict: the result of the action. I.e. {'ok': True, 'statusCode': 200}
 
         """
+        if self.__logger:
+            self.__logger.debug(f'smartdoctype_rule_generatedocument_delete() start: {locals()}')
         retval = {}
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/smartdocumenttypes/rules/{rule_id}/bots/createdocument'
@@ -2168,6 +2361,9 @@ class CSRestAPI:
         jres = json.loads(res)
 
         retval = jres.get('results', {})
+
+        if self.__logger:
+            self.__logger.debug(f'smartdoctype_rule_generatedocument_delete() finished: {retval}')
 
         return retval
 
@@ -2191,6 +2387,8 @@ class CSRestAPI:
             dict: the result of the action. I.e. {'ok': True, 'statusCode': 200}
 
         """
+        if self.__logger:
+            self.__logger.debug(f'smartdoctype_rule_allowupload_save() start: {locals()}')
         retval = {}
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/smartdocumenttypes/rules/{rule_id}/bots/uploadcontrol'
@@ -2214,6 +2412,9 @@ class CSRestAPI:
 
         retval = jres.get('results', {})
 
+        if self.__logger:
+            self.__logger.debug(f'smartdoctype_rule_allowupload_save() finished: {retval}')
+
         return retval
 
     def smartdoctype_rule_allowupload_delete(self, base_url_cs: str, rule_id: int) -> dict:
@@ -2230,6 +2431,8 @@ class CSRestAPI:
             dict: the result of the action. I.e. {'ok': True, 'statusCode': 200}
 
         """
+        if self.__logger:
+            self.__logger.debug(f'smartdoctype_rule_allowupload_delete() start: {locals()}')
         retval = {}
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/smartdocumenttypes/rules/{rule_id}/bots/uploadcontrol'
@@ -2240,6 +2443,9 @@ class CSRestAPI:
         jres = json.loads(res)
 
         retval = jres.get('results', {})
+
+        if self.__logger:
+            self.__logger.debug(f'smartdoctype_rule_allowupload_delete() finished: {retval}')
 
         return retval
 
@@ -2269,6 +2475,8 @@ class CSRestAPI:
             dict: the result of the action. I.e. {'ok': True, 'statusCode': 200}
 
         """
+        if self.__logger:
+            self.__logger.debug(f'smartdoctype_rule_uploadapproval_save() start: {locals()}')
         retval = {}
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/smartdocumenttypes/rules/{rule_id}/bots/uploadwithapproval'
@@ -2304,6 +2512,9 @@ class CSRestAPI:
 
         retval = jres.get('results', {})
 
+        if self.__logger:
+            self.__logger.debug(f'smartdoctype_rule_uploadapproval_save() finished: {retval}')
+
         return retval
 
     def smartdoctype_rule_uploadapproval_delete(self, base_url_cs: str, rule_id: int) -> dict:
@@ -2320,6 +2531,8 @@ class CSRestAPI:
             dict: the result of the action. I.e. {'ok': True, 'statusCode': 200}
 
         """
+        if self.__logger:
+            self.__logger.debug(f'smartdoctype_rule_uploadapproval_delete() start: {locals()}')
         retval = {}
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/smartdocumenttypes/rules/{rule_id}/bots/uploadwithapproval'
@@ -2331,19 +2544,469 @@ class CSRestAPI:
 
         retval = jres.get('results', {})
 
+        if self.__logger:
+            self.__logger.debug(f'smartdoctype_rule_uploadapproval_delete() finished: {retval}')
+
+        return retval
+
+    def businessworkspace_search(self, base_url_cs: str, logical_system: str, bo_type: str, bo_id: str, page: int) -> dict:
+        """ Search for a Business Workspace by Business Object Type and ID
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            logical_system (str):
+                The Logical System customized under the Connections to Business Applications (External Systems). I.e. SuccessFactors
+
+            bo_type (str):
+                The Business Object Type. I.e. sfsf:user or BUS1065
+
+            bo_id (str):
+                The Business Object ID. I.e. 2100000
+
+            page (int):
+                The page number to fetch in the results
+
+        Returns:
+             dict: found businessworkspaces that correspond to the search criteria with structure: { 'results': [{'id', 'name', 'parent_id'}], 'page_total': 0 }
+
+        """
+        if self.__logger:
+            self.__logger.debug(f'businessworkspace_search() start: {locals()}')
+        retval = { 'results': [], 'page_total': 0 }
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v2/businessworkspaces'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        params = { 'where_ext_system_id': logical_system, 'where_bo_type': bo_type, 'where_bo_id': bo_id, 'expanded_view': 0, 'page': page, 'limit': 200 }
+
+        res = self.call_get(url, params)
+
+        jres = json.loads(res)
+
+        if jres and jres.get('results', []):
+            for item in jres.get('results', []):
+                if item.get('data', {}) and item.get('data', {}).get('properties', {}):
+                    line = {'id': item["data"]["properties"].get("id"), 'name': item["data"]["properties"].get("name"), 'parent_id': item["data"]["properties"].get("parent_id")}
+                    retval['results'].append(line)
+
+            if jres.get('paging', {}):
+                retval['page_total'] = jres['paging'].get('page_total', 0)
+
+        if self.__logger:
+            self.__logger.debug(f'businessworkspace_search() finished: {retval}')
+
+        return retval
+
+    def businessworkspace_smartdoctypes_get(self, base_url_cs: str, bws_id: int) -> list:
+        """ Get available Smart Document Types of Business Workspace
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            bws_id (str):
+                The Node ID of the Business Workspace
+
+        Returns:
+             list: available Smart Document Types of the requested Business Workspace: { 'results': [{'id', 'name', 'parent_id'}], 'page_total': 0 }
+
+        """
+        if self.__logger:
+            self.__logger.debug(f'businessworkspace_smartdoctypes_get() start: {locals()}')
+        retval = []
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v2/businessworkspaces/{bws_id}/doctypes'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        params = { 'skip_validation': False, 'document_type_rule': True, 'document_generation_only': False, 'sort_by': 'DocumentType', 'parent_id': bws_id, 'filter_by_location': True }
+
+        res = self.call_get(url, params)
+
+        jres = json.loads(res)
+
+        if jres and jres.get('results', []):
+            for item in jres.get('results', []):
+                if item.get('data', {}) and item.get('data', {}).get('properties', {}):
+                    line = {'classification_id': item["data"]["properties"].get("classification_id"), 'classification_name': item["data"]["properties"].get("classification_name"), 'classification_description': item["data"]["properties"].get("classification_description"), 'category_id': item["data"]["properties"].get("category_id"), 'location': item["data"]["properties"].get("location"), 'document_generation': item["data"]["properties"].get("document_generation"), 'required': item["data"]["properties"].get("required"), 'template_id': item["data"]["properties"].get("template_id")}
+                    retval.append(line)
+
+        if self.__logger:
+            self.__logger.debug(f'businessworkspace_smartdoctypes_get() finished: {retval}')
+
+        return retval
+
+    def businessworkspace_categorydefinition_for_upload_get(self, base_url_cs: str, bws_id: int, category_id: int) -> list:
+        """ Get Category Form for Uploading File into Business Workspace
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            bws_id (str):
+                The Node ID of the Business Workspace
+
+            category_id (str):
+                The Node ID of the Category which is applied. Get it from businessworkspace_smartdoctypes_get()
+
+        Returns:
+             list: form fields of the category definition: { 'results': [{'id', 'name', 'parent_id'}], 'page_total': 0 }
+
+        """
+        if self.__logger:
+            self.__logger.debug(f'businessworkspace_categorydefinition_for_upload_get() start: {locals()}')
+        retval = []
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v1/forms/nodes/categories/create'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        params = { 'id': bws_id, 'category_id': category_id }
+
+        res = self.call_get(url, params)
+
+        jres = json.loads(res)
+
+        if jres and jres.get('forms', []):
+            retval = jres.get('forms', [])
+
+        if self.__logger:
+            self.__logger.debug(f'businessworkspace_categorydefinition_for_upload_get() finished: {retval}')
+
+        return retval
+
+    def businessworkspace_hr_upload_file_depricated(self, base_url_cs: str, logical_system: str, bo_type: str, bo_id: str, local_folder: str, local_filename: str, remote_filename: str, document_type: str, date_of_origin: datetime) -> int:
+        """ Upload Document into HR workspace from a Local File.
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            logical_system (str):
+                The Logical System customized under the Connections to Business Applications (External Systems). I.e. SuccessFactors
+
+            bo_type (str):
+                The Business Object Type. I.e. sfsf:user or BUS1065
+
+            bo_id (str):
+                The Business Object ID. I.e. 2100000
+
+            local_folder (str):
+                The local path to store the file.
+
+            local_filename (str):
+                The local file name of the document.
+
+            remote_filename (str):
+                The remote file name of the document.
+
+            document_type (str):
+                The document type (name of classification) of the document. I.e. 'Application Document'
+
+            date_of_origin (datetime):
+                The date of origin of the document.
+
+        Returns:
+            int: the new node id of the uploaded document
+
+        """
+        if self.__logger:
+            self.__logger.debug(f'businessworkspace_hr_upload_file_depricated() start: {locals()}')
+        retval = -1
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v2/businessobjects/{logical_system}/{bo_type}/{bo_id}/hrdocuments'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        params = { 'doc_type': document_type, 'date_of_origin': date_of_origin.isoformat() }
+
+        files = {'file': (remote_filename, open(os.path.join(local_folder, local_filename), 'rb'), 'application/octet-stream')}
+
+        res = self.call_post_form_data(url, params, files)
+
+        jres = json.loads(res)
+
+        if jres and jres.get('results', {}):
+            retval = jres['results'].get('nodeID', -1)
+
+        if self.__logger:
+            self.__logger.debug(f'businessworkspace_hr_upload_file_depricated() finished: {retval}')
+
+        return retval
+
+    def businessworkspace_hr_upload_bytes_depricated(self, base_url_cs: str, logical_system: str, bo_type: str, bo_id: str, content_bytes: bytes, remote_filename: str, document_type: str, date_of_origin: datetime) -> int:
+        """ Upload Document into HR workspace as Byte Array.
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            logical_system (str):
+                The Logical System customized under the Connections to Business Applications (External Systems). I.e. SuccessFactors
+
+            bo_type (str):
+                The Business Object Type. I.e. sfsf:user or BUS1065
+
+            bo_id (str):
+                The Business Object ID. I.e. 2100000
+
+            content_bytes (bytes):
+                The bytearray containing the file's content.
+
+            remote_filename (str):
+                The remote file name of the document.
+
+            document_type (str):
+                The document type (name of classification) of the document. I.e. 'Application Document'
+
+            date_of_origin (datetime):
+                The date of origin of the document.
+
+        Returns:
+            int: the new node id of the uploaded document
+
+        """
+        if self.__logger:
+            self.__logger.debug(f'businessworkspace_hr_upload_bytes_depricated() start: {locals()}')
+        retval = -1
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v2/businessobjects/{logical_system}/{bo_type}/{bo_id}/hrdocuments'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        params = { 'doc_type': document_type, 'date_of_origin': date_of_origin.isoformat() }
+
+        files = {'file': (remote_filename, content_bytes, 'application/octet-stream')}
+
+        res = self.call_post_form_data(url, params, files)
+
+        jres = json.loads(res)
+
+        if jres and jres.get('results', {}):
+            retval = jres['results'].get('nodeID', -1)
+
+        if self.__logger:
+            self.__logger.debug(f'businessworkspace_hr_upload_bytes_depricated() finished: {retval}')
+
+        return retval
+
+    def businessworkspace_hr_upload_file(self, base_url_cs: str, bws_id: int, local_folder: str, local_filename: str, remote_filename: str, classification_id: int, category_id: int, category: dict) -> int:
+        """ Upload Document into HR workspace from a Local File.
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            bws_id (str):
+                The NodeID of the Business Workspace.
+
+            local_folder (str):
+                The local path to store the file.
+
+            local_filename (str):
+                The local file name of the document.
+
+            remote_filename (str):
+                The remote file name of the document.
+
+            classification_id (int):
+                The Node ID of the document type (ID of classification) of the document.
+
+            category_id (int):
+                The Node ID of the category (containing the Date Of Origin) of the document.
+
+            category (dict):
+                The category containing usually the date of origin of the document. I.e. { "6002_2": "2025-02-15T00:00:00Z"}
+
+        Returns:
+            int: the new node id of the uploaded document
+
+        """
+        if self.__logger:
+            self.__logger.debug(f'businessworkspace_hr_upload_file() start: {locals()}')
+
+        retval = -1
+
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v2/businessworkspace/preview'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        params = { 'bw_id': bws_id }
+
+        files = {'file': (remote_filename, open(os.path.join(local_folder, local_filename), 'rb'), 'application/octet-stream')}
+
+        res = self.call_post_form_data(url, params, files)
+
+        jres = json.loads(res)
+        if self.__logger:
+            self.__logger.debug(f'businessworkspace_hr_upload_file() preview finished: {jres}')
+
+        if jres and jres.get('results', {}):
+            retval = jres['results'].get('docNodeId', -1)
+
+        if retval > 0:
+            apiendpoint = f'api/v2/businessworkspace/{bws_id}/postupload'
+            url = urllib.parse.urljoin(base_url, apiendpoint)
+
+            params = {'docNodeId': retval, 'classification_id': classification_id, 'document_name': remote_filename }
+
+            res = self.call_put(url, params)
+
+            jres = json.loads(res)
+
+            if jres and jres.get('results', {}):
+                if jres['results'].get('ok', False) and jres['results'].get('errMsg', '') == '':
+                    if self.__logger:
+                        self.__logger.debug(f'businessworkspace_hr_upload_file() postupload - successfully applied classification')
+                else:
+                    error_message = f"Error in businessworkspace_hr_upload_file() postupload -> the classification was not applied successfully: {jres['results'].get('errMsg', '')}"
+                    if self.__logger:
+                        self.__logger.error(error_message)
+
+                    if retval > 0:
+                        try:
+                            # clean up 999 Inbox folder
+                            self.node_delete(base_url_cs, retval)
+                            retval = -1
+                        except Exception as innerErr:
+                            error_message2 = f'Error in businessworkspace_hr_upload_file() postupload - cleanup failed: the file could not deleted from 999 Inbox: {innerErr}.'
+                            if self.__logger:
+                                self.__logger.error(error_message2)
+
+                    raise Exception(error_message)
+
+            if self.__logger:
+                self.__logger.debug(f'businessworkspace_hr_upload_file() postupload finished: {jres}')
+
+            if category:
+                res = self.node_category_update(base_url_cs, retval, category_id, category)
+                if self.__logger:
+                    self.__logger.debug(f'businessworkspace_hr_upload_file() -> node_category_add() finished: {res}')
+
+            if self.__logger:
+                self.__logger.debug(f'businessworkspace_hr_upload_file() finished: {retval}')
+
+        else:
+            error_message = f'Error in businessworkspace_hr_upload_file() -> the file upload did not return a valid node Id: {res}'
+            if self.__logger:
+                self.__logger.error(error_message)
+            raise Exception(error_message)
+
+        return retval
+
+    def businessworkspace_hr_upload_bytes(self, base_url_cs: str, bws_id: int, content_bytes: bytes, remote_filename: str, classification_id: int, category_id: int, category: dict) -> int:
+        """ Upload Document into HR workspace as Byte Array.
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            bws_id (str):
+                The NodeID of the Business Workspace.
+
+            content_bytes (bytes):
+                The bytearray containing the file's content.
+
+            remote_filename (str):
+                The remote file name of the document.
+
+            classification_id (int):
+                The Node ID of the document type (ID of classification) of the document.
+
+            category_id (int):
+                The Node ID of the category (containing the Date Of Origin) of the document.
+
+            category (dict):
+                The category containing usually the date of origin of the document. I.e. { "6002_2": "2025-02-15T00:00:00Z"}
+
+        Returns:
+            int: the new node id of the uploaded document
+
+        """
+        if self.__logger:
+            self.__logger.debug(f'businessworkspace_hr_upload_bytes() start: {locals()}')
+
+        retval = -1
+
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v2/businessworkspace/preview'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        params = { 'bw_id': bws_id }
+
+        files = {'file': (remote_filename, content_bytes, 'application/octet-stream')}
+
+        res = self.call_post_form_data(url, params, files)
+
+        jres = json.loads(res)
+        if self.__logger:
+            self.__logger.debug(f'businessworkspace_hr_upload_bytes() preview finished: {jres}')
+
+        if jres and jres.get('results', {}):
+            retval = jres['results'].get('docNodeId', -1)
+
+        if retval > 0:
+            apiendpoint = f'api/v2/businessworkspace/{bws_id}/postupload'
+            url = urllib.parse.urljoin(base_url, apiendpoint)
+
+            params = {'docNodeId': retval, 'classification_id': classification_id, 'document_name': remote_filename }
+
+            res = self.call_put(url, params)
+
+            jres = json.loads(res)
+
+            if jres and jres.get('results', {}):
+                if jres['results'].get('ok', False) and jres['results'].get('errMsg', '') == '':
+                    if self.__logger:
+                        self.__logger.debug(f'businessworkspace_hr_upload_bytes() postupload - successfully applied classification')
+                else:
+                    error_message = f"Error in businessworkspace_hr_upload_bytes() postupload -> the classification was not applied successfully: {jres['results'].get('errMsg', '')}"
+                    if self.__logger:
+                        self.__logger.error(error_message)
+
+                    if retval > 0:
+                        try:
+                            # clean up 999 Inbox folder
+                            self.node_delete(base_url_cs, retval)
+                            retval = -1
+                        except Exception as innerErr:
+                            error_message2 = f'Error in businessworkspace_hr_upload_file() postupload - cleanup failed: the file could not deleted from 999 Inbox: {innerErr}.'
+                            if self.__logger:
+                                self.__logger.error(error_message2)
+
+                    raise Exception(error_message)
+
+            if self.__logger:
+                self.__logger.debug(f'businessworkspace_hr_upload_bytes() postupload finished: {jres}')
+
+            if category:
+                res = self.node_category_update(base_url_cs, retval, category_id, category)
+                if self.__logger:
+                    self.__logger.debug(f'businessworkspace_hr_upload_bytes() -> node_category_add() finished: {res}')
+
+            if self.__logger:
+                self.__logger.debug(f'businessworkspace_hr_upload_bytes() finished: {retval}')
+
+        else:
+            error_message = f'Error in businessworkspace_hr_upload_bytes() -> the file upload did not return a valid node Id: {res}'
+            if self.__logger:
+                self.__logger.error(error_message)
+            raise Exception(error_message)
+
         return retval
 
 
     # todo: implement
-    def bws_hr_upload_file(self):
-        pass
 
 
-    def bws_hr_upload_bytes(self):
-        pass
-
+    # get permissions: node_get()
 
     def node_permissions_apply(self):
         # OwnerPermissions, GroupPermissions, PublicPermissions, CustomPermissions
         pass
 
+    def webreport_nickname_call(self):
+        # Call webreport by nickname
+        pass
+
+    def workflow_start(self):
+        # Start Workflow
+        pass

@@ -2,7 +2,8 @@
 
 This python library calls the Opentext Extended ECM REST API.
 The API documentation is available on [OpenText Developer](https://developer.opentext.com/ce/products/extendedecm)
-A detailed documentation of this package is available [on GitHub](https://fitschgo.github.io/xecm/).
+A detailed documentation of this package is available [on GitHub](https://github.com/fitschgo/xecm).
+Our Homepage is: [xECM SuccessFactors Knowledge](https://www.xecm-successfactors.com/xecm-knowledge.html)
 
 # Quick start
 

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = 'xecm'
-version = "0.0.3"
+version = "1.0.0"
 authors = [
   { name="Philipp Egger", email="philipp.egger@handel-it.com" },
 ]
@@ -34,3 +34,4 @@ dependencies = [
 
 [project.urls]
 Homepage = "https://github.com/fitschgo/xecm"
+Issues = "https://github.com/fitschgo/xecm/issues"
