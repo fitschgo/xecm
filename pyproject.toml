@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = 'xecm'
-version = "24.4.1"
+version = "24.4.2"
 authors = [
   { name="Philipp Egger", email="philipp.egger@handel-it.com" },
 ]
