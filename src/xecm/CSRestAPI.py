@@ -26,6 +26,7 @@ class CSRestAPI:
     __ticket = ''
     __usr = ''
     __pwd = ''
+    __verify_ssl = True
     __login_type: LoginType
     __volumes_hash = {}
     __category_hash = {}
@@ -36,6 +37,7 @@ class CSRestAPI:
         login_url: str,
         user_or_client_id: str,
         pw_or_client_secret: str,
+        verify_ssl: bool,
         logger: logging.Logger
     ) -> None:
         """Initialize the XECMLogin class.
@@ -59,6 +61,8 @@ class CSRestAPI:
                 self.__logger = logger
             else:
                 self.__logger = None
+
+            self.__verify_ssl = verify_ssl
 
             self.__login_type = login_type
 
@@ -120,7 +124,7 @@ class CSRestAPI:
         # do REST API call to CS
         r = requests.post(url=url, data=params,
                           headers={'User-Agent': self.__useragent,
-                                   'Content-Type': 'application/x-www-form-urlencoded'})
+                                   'Content-Type': 'application/x-www-form-urlencoded'}, verify=self.__verify_ssl)
 
         if self.__logger:
             self.__pretty_print_POST(r.request)
@@ -179,7 +183,7 @@ class CSRestAPI:
         # do REST API call to CS
         r = requests.post(url=url, data=json.dumps(params),
                           headers={'User-Agent': self.__useragent,
-                                   'Content-Type': 'application/json;charset=utf-8'})
+                                   'Content-Type': 'application/json;charset=utf-8'}, verify=self.__verify_ssl)
 
         if self.__logger:
             self.__pretty_print_POST(r.request)
@@ -238,7 +242,7 @@ class CSRestAPI:
         # do REST API call to CS
         r = requests.post(url=url, data=params,
                           headers={'User-Agent': self.__useragent,
-                                   'Content-Type': 'application/x-www-form-urlencoded'}, auth=(client_id, client_secret))
+                                   'Content-Type': 'application/x-www-form-urlencoded'}, auth=(client_id, client_secret), verify=self.__verify_ssl)
 
         if self.__logger:
             self.__pretty_print_POST(r.request)
@@ -346,7 +350,7 @@ class CSRestAPI:
         apiendpoint = f'api/v1/ping'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
-        r = requests.get(url=url, headers={'Content-Type': 'application/json', 'User-Agent': self.__useragent})
+        r = requests.get(url=url, headers={'Content-Type': 'application/json', 'User-Agent': self.__useragent}, verify=self.__verify_ssl)
 
         if self.__logger:
             self.__pretty_print_GET(r.request)
@@ -403,7 +407,7 @@ class CSRestAPI:
 
         r = requests.get(url=api_url,
                          headers={'Content-Type': 'application/json', auth_header: auth_ticket,
-                                  'User-Agent': self.__useragent}, params=params)
+                                  'User-Agent': self.__useragent}, params=params, verify=self.__verify_ssl)
 
         if self.__logger:
             self.__pretty_print_GET(r.request)
@@ -458,7 +462,7 @@ class CSRestAPI:
             auth_header = 'Authorization'
             auth_ticket = f'Bearer {self.__ticket}'
 
-        r = requests.post(url=api_url, headers={'Content-Type': 'application/x-www-form-urlencoded', auth_header: auth_ticket, 'User-Agent': self.__useragent}, data=params)
+        r = requests.post(url=api_url, headers={'Content-Type': 'application/x-www-form-urlencoded', auth_header: auth_ticket, 'User-Agent': self.__useragent}, data=params, verify=self.__verify_ssl)
 
         if self.__logger:
             self.__pretty_print_POST(r.request)
@@ -516,7 +520,7 @@ class CSRestAPI:
             auth_header = 'Authorization'
             auth_ticket = f'Bearer {self.__ticket}'
 
-        r = requests.post(url=api_url, headers={auth_header: auth_ticket, 'User-Agent': self.__useragent}, data=params, files=files)
+        r = requests.post(url=api_url, headers={auth_header: auth_ticket, 'User-Agent': self.__useragent}, data=params, files=files, verify=self.__verify_ssl)
 
         if self.__logger:
             self.__pretty_print_POST(r.request)
@@ -571,7 +575,7 @@ class CSRestAPI:
             auth_header = 'Authorization'
             auth_ticket = f'Bearer {self.__ticket}'
 
-        r = requests.put(url=api_url, headers={auth_header: auth_ticket, 'User-Agent': self.__useragent}, data=params)
+        r = requests.put(url=api_url, headers={auth_header: auth_ticket, 'User-Agent': self.__useragent}, data=params, verify=self.__verify_ssl)
 
         if self.__logger:
             self.__pretty_print_POST(r.request)
@@ -623,7 +627,7 @@ class CSRestAPI:
             auth_header = 'Authorization'
             auth_ticket = f'Bearer {self.__ticket}'
 
-        r = requests.delete(url=api_url, headers={'Content-Type': 'application/json', auth_header: auth_ticket, 'User-Agent': self.__useragent})
+        r = requests.delete(url=api_url, headers={'Content-Type': 'application/json', auth_header: auth_ticket, 'User-Agent': self.__useragent}, verify=self.__verify_ssl)
 
         if self.__logger:
             self.__pretty_print_GET(r.request)
@@ -760,7 +764,12 @@ class CSRestAPI:
                                 raise Exception(f"Error in node_get() - permission type {perms['type']} is not supported.")
 
                 if load_classifications:
-                    retval['classifications'] = self.node_classifications_get(base_url_cs, node_id, ['data'])
+                    try:
+                        retval['classifications'] = self.node_classifications_get(base_url_cs, node_id, ['data'])
+                    except Exception as innerErr:
+                        error_message = f'Error in node_get() while getting classifications -> {innerErr}'
+                        if self.__logger:
+                            self.__logger.error(error_message)
 
         if self.__logger:
             self.__logger.debug(f'node_get() finished: {retval}')
@@ -1068,7 +1077,7 @@ class CSRestAPI:
 
         # download content into local file
         try:
-            with requests.get(url=url, headers={'Content-Type': 'application/json', auth_header: auth_ticket, 'User-Agent': self.__useragent}, stream=True) as r:
+            with requests.get(url=url, headers={'Content-Type': 'application/json', auth_header: auth_ticket, 'User-Agent': self.__useragent}, stream=True, verify=self.__verify_ssl) as r:
                 r.raise_for_status()
                 file_size = 0
                 if self.__logger:
@@ -1139,7 +1148,7 @@ class CSRestAPI:
 
         # download content into local file
         try:
-            with requests.get(url=url, headers={'Content-Type': 'application/json', auth_header: auth_ticket, 'User-Agent': self.__useragent}, stream=True) as r:
+            with requests.get(url=url, headers={'Content-Type': 'application/json', auth_header: auth_ticket, 'User-Agent': self.__useragent}, stream=True, verify=self.__verify_ssl) as r:
                 r.raise_for_status()
                 file_size = 0
                 if self.__logger:
@@ -1569,7 +1578,12 @@ class CSRestAPI:
                                     raise Exception(f"Error in subnodes_get() - permission type {perms['type']} is not supported.")
 
                     if load_classifications and item["data"]["properties"].get('id'):
-                        line['classifications'] = self.node_classifications_get(base_url_cs, item["data"]["properties"].get('id'), ['data'])
+                        try:
+                            line['classifications'] = self.node_classifications_get(base_url_cs, item["data"]["properties"].get('id'), ['data'])
+                        except Exception as innerErr:
+                            error_message = f'Error in subnodes_get() while getting classifications -> {item["data"]["properties"]} -> {innerErr}'
+                            if self.__logger:
+                                self.__logger.error(error_message)
 
                     retval['results'].append(line)
 
