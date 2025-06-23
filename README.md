@@ -34,7 +34,7 @@ if __name__ == '__main__':
     # get OTDS Bearer Token with client id and client secret
     csapi = xecm.CSRestAPI(xecm.LoginType.OTDS_BEARER, dshost, 'oauth-user', 'gU5p8....4KZ', deflogger)
 
-# ...
+    # ...
 
     nodeId = 130480
     res = csapi.node_get(f'{cshost}/otcs/cs.exe', nodeId, ['id', 'name', 'type', 'type_name'], False, False, False)
@@ -82,6 +82,9 @@ if __name__ == '__main__':
     # filter subnodes
     res = csapi.subnodes_filter(f'{cshost}/otcs/cs.exe', 30622, 'OTHCM_WS_Employee_Categories', False, True)
 
+    # search nodes
+    res = csapi.search(f'{cshost}/otcs/cs.exe', 'Documents', 0, baseFolderId, 1)
+
     # create new node - min
     res = csapi.node_create(f'{cshost}/otcs/cs.exe', parentId, 0, 'test', 'test', {}, {} )
 
@@ -97,6 +100,44 @@ if __name__ == '__main__':
 
     # delete a node
     res = csapi.node_delete(f'{cshost}/cs/cs.exe', nodeId)
+    
+    # download a document into file system
+    res = csapi.node_download_file(f'{cshost}/otcs/cs.exe', nodeId, '', '/home/fitsch/Downloads', 'test-download.pdf')
+
+    # download a document as base64 string
+    res = csapi.node_download_bytes(f'{cshost}/otcs/cs.exe', nodeId, '')
+    # {'message', 'file_size', 'base64' }
+
+    # upload a document from file system
+    res = csapi.node_upload_file(f'{cshost}/otcs/cs.exe', nodeId, '/home/fitsch/Downloads', 'test-download.pdf', 'test-upload.pdf', { '30724_2': '2020-03-17' })
+
+    # upload a document from byte array
+    barr = open('/home/fitsch/Downloads/test-download.pdf', 'rb').read()
+    res = csapi.node_upload_bytes(f'{cshost}/otcs/cs.exe', nodeId, barr, 'test-upload.pdf', {'30724_2': '2020-03-17'})
+
+    # covert a Content Server path to a Node ID
+    res = csapi.path_to_id(f'{cshost}/otcs/cs.exe', 'Content Server Categories:SuccessFactors:OTHCM_WS_Employee_Categories:Personal Information')
+
+    # get all volumes in Content Server
+    res = csapi.volumes_get(f'{cshost}/otcs/cs.exe')
+    # [
+    # {
+    #   'properties': 
+    #   {
+    #       'id': 2006, 
+    #       'name': 'Content Server Categories'
+    #   }
+    # }, 
+    # {
+    #   'properties': 
+    #   {
+    #       'id': 2000, 
+    #       'name': 'Enterprise'
+    #   }
+    # }, 
+    # ...
+    # ]
+
 ```
 
 ## Category Functions (Metadata)
@@ -113,7 +154,26 @@ if __name__ == '__main__':
     # delete category from a node
     res = csapi.node_category_delete(f'{cshost}/otcs/cs.exe', nodeId, 32133)
 
-    # read category information
+    # read all category attributes - use i.e. path_to_id() to get cat_id
+    res = csapi.category_get_mappings(f'{cshost}/otcs/cs.exe', cat_id)
+    # {
+    #   'main_name': 'Job Information', 
+    #   'main_id': 32133, 
+    #   'map_names': 
+    #   {
+    #       'Company Code': '32133_2', 
+    #       'Company Code Description': '32133_3', 
+    #       ...
+    #   }, 
+    #   'map_ids': 
+    #   {
+    #       '32133_2': 'Company Code', 
+    #       '32133_3': 'Company Code Description', 
+    #       ...
+    #   }
+    # }
+    
+    # get category information for a specific attribute
     res = csapi.category_attribute_id_get(f'{cshost}/otcs/cs.exe', 'Content Server Categories:SuccessFactors:OTHCM_WS_Employee_Categories:Personal Information', 'User ID')
     # {
     #   'category_id': 30643, 
@@ -238,6 +298,141 @@ if __name__ == '__main__':
     # delete 'document generation' tab in rule
     res = csapi.smartdoctype_rule_generatedocument_delete(f'{cshost}/otcs/cs.exe', ruleId)
 
+    # add 'allow upload' tab in rule
+    res = csapi.smartdoctype_rule_allowupload_save(f'{cshost}/otcs/cs.exe', ruleId, [2001], 'add')
+
+    # update 'allow upload' tab in rule
+    res = csapi.smartdoctype_rule_allowupload_save(f'{cshost}/otcs/cs.exe', ruleId, [2001,120593], 'update')
+
+    # delete 'allow upload' tab in rule
+    res = csapi.smartdoctype_rule_allowupload_delete(f'{cshost}/otcs/cs.exe', ruleId)
+
+    # add 'upload approval' tab in rule
+    res = csapi.smartdoctype_rule_uploadapproval_save(f'{cshost}/otcs/cs.exe', ruleId, True, workflowMapId, [{'wfrole': 'Approver', 'member': 2001 }], 'add')
+
+    # update 'allow upload' tab in rule
+    res = csapi.smartdoctype_rule_uploadapproval_save(f'{cshost}/otcs/cs.exe', ruleId, True, workflowMapId, [{'wfrole': 'Approver', 'member': 120593 }], 'update')
+
+    # delete 'allow upload' tab in rule
+    res = csapi.smartdoctype_rule_uploadapproval_delete(f'{cshost}/otcs/cs.exe', ruleId)
+```
+
+## Business Workspace Functions
+```python
+    # get business workspace node id by business object type and business object id
+    res = csapi.businessworkspace_search(f'{cshost}/otcs/cs.exe', 'SuccessFactors', 'sfsf:user', 'Z70080539', 1)
+
+    # get customized smart document types for business workspace
+    # bws_id from businessworkspace_search()
+    res = csapi.businessworkspace_smartdoctypes_get(f'{cshost}/otcs/cs.exe', bws_id)
+    # [{'classification_id': 120571, 'classification_name': 'Application Documents', 'classification_description': '', 'category_id': 6002, 'location': '122061:122063', 'document_generation': 0, 'required': 0, 'template_id': 120576}, ...]
+    
+    # get category definition for smart document type to be used for document upload into business workspace
+    # bws_id from businessworkspace_search()
+    # cat_id from businessworkspace_smartdoctypes_get()
+    res = csapi.businessworkspace_categorydefinition_for_upload_get(f'{cshost}/otcs/cs.exe', bws_id, cat_id)
+
+    # upload file using smart document type into business workspace
+    res = csapi.businessworkspace_hr_upload_file(f'{cshost}/otcs/cs.exe', bws_id, '/home/fitsch/Downloads', 'test-download.pdf', 'application.pdf', class_dict['classification_id'], cat_id, cat_dict)
+    
+    ##### ########################## #####
+    ##### snippet for upload process #####
+    ##### ########################## #####
+    res = csapi.businessworkspace_search(f'{cshost}/otcs/cs.exe', 'SuccessFactors', 'sfsf:user', 'Z70080539', 1)
+
+    bws_id = -1
+    class_name = 'Application Documents'
+    class_dict = {}
+    cat_id = -1
+    cat_attr_date_of_origin = ''
+    cat_dict = {}
+    date_of_origin = datetime(2020, 5, 17)
+    # res = {'results': [{'id': 122051, 'name': 'Employee Z70080539 Phil Egger', 'parent_id': 30648}, ... ], 'page_total': 1}
+    if res and res.get('results', []) and len(res.get('results', [])) > 0:
+        bws_id = res['results'][0].get('id', -1)
+
+    if bws_id > 0:
+        res = csapi.businessworkspace_smartdoctypes_get(f'{cshost}/otcs/cs.exe', bws_id)
+        # res = [{'classification_id': 120571, 'classification_name': 'Application Documents', 'classification_description': '', 'category_id': 6002, 'location': '122061:122063', 'document_generation': 0, 'required': 0, 'template_id': 120576}, ... ]
+        if res:
+            for class_def in res:
+                if class_def['classification_name'] == class_name:
+                    class_dict = class_def
+                    break
+
+        if class_dict:
+            # class_dict = {'classification_id': 120571, 'classification_name': 'Application Documents', 'classification_description': '', 'category_id': 6002, 'location': '122061:122063', 'document_generation': 0, 'required': 0, 'template_id': 120576}
+            res = csapi.businessworkspace_categorydefinition_for_upload_get(f'{cshost}/otcs/cs.exe', bws_id, class_dict['category_id'])
+            # res = [{'data': {'category_id': 6002, '6002_2': None}, 'options': {}, 'form': {}, 'schema': {'properties': {'category_id': {'readonly': False, 'required': False, 'title': 'Document Type Details', 'type': 'integer'}, '6002_2': {'readonly': False, 'required': False, 'title': 'Date of Origin', 'type': 'date'}}, 'type': 'object'}}]
+            if res and len(res) > 0:
+                if res[0].get('schema', {}) and res[0]['schema'].get('properties', {}):
+                    # res[0]['schema']['properties'] = {'category_id': {'readonly': False, 'required': False, 'title': 'Document Type Details', 'type': 'integer'}, '6002_2': {'readonly': False, 'required': False, 'title': 'Date of Origin', 'type': 'date'}}
+                    cat_id = class_dict['category_id']
+                    for p in res[0]['schema']['properties']:
+                        if str(cat_id) in p and res[0]['schema']['properties'][p].get('type', '') == 'date' and 'Origin' in res[0]['schema']['properties'][p].get('title', ''):
+                            cat_attr_date_of_origin = p
+                            break
+
+            if cat_id > 0 and cat_attr_date_of_origin:
+                cat_dict =  { cat_attr_date_of_origin: date_of_origin.isoformat() }
+            else:
+                deflogger.info(f'Date Of Origin not found in Category {class_dict['category_id']} for Workspace {bws_id}')
+
+            try:
+                res = csapi.businessworkspace_hr_upload_file(f'{cshost}/otcs/cs.exe', bws_id, '/home/fitsch/Downloads', 'test-download.pdf', 'application.pdf', class_dict['classification_id'], cat_id, cat_dict)
+                if res > 0:
+                    deflogger.info(f'File successfully uploaded - {res}')
+                else:
+                    raise Exception(f'Invalid Node ID returned: {res}')
+            except Exception as innerErr:
+                deflogger.error(f'File failed to upload {innerErr}')
+        else:
+            deflogger.error(f'Classification Definition not found for {class_name} in Workspace {bws_id}')
+
+```
+
+## WebReport Functions
+```python
+    # call web report by nickname using parameters
+    res = csapi.webreport_nickname_call(f'{cshost}/otcs/cs.exe', 'WR_API_Test', {'p_name': 'name', 'p_desc': 'description'})
+
+    # call web report by node id using parameters
+    res = csapi.webreport_nodeid_call(f'{cshost}/otcs/cs.exe', wr_id, {'p_name': 'name', 'p_desc': 'description'})
+```
+
+## Servier Information Functions
+```python
+    # ping Content Server
+    res = csapi.ping(f'{cshost}/otcs/cs.exe')
+
+    # get server info (version, metadata languages, ...)
+    res = csapi.server_info(f'{cshost}/otcs/cs.exe')
+    print(f"Version: {res['server']['version']}")
+    print('Metadata Languages:')
+    for lang in res['server']['metadata_languages']:
+        print(f"{lang['language_code']} - {lang['display_name']}")
+```
+
+## Basic API Functions - in case that something is not available in this class
+```python
+    # GET API Call
+    res = csapi.call_get(f'{cshost}/otcs/cs.exe/api/v1/nodes/2000/classifications')
+
+    # POST API Call using form-url-encoded -> i.e. do fancy search
+    res = csapi.call_post_form_url_encoded(f'{cshost}/otcs/cs.exe/api/v2/search', { 'body': json.dumps({ 'where': 'OTName: "Personal Information" and OTSubType: 131 and OTLocation: 2006' })})
+
+    # POST API Call using form-data -> can be used to upload files
+    data = { 'type': 144, 'parent_id': parent_id, 'name': remote_filename }
+    params = { 'body' : json.dumps(data) }
+    files = {'file': (remote_filename, open(os.path.join(local_folder, local_filename), 'rb'), 'application/octet-stream')}
+    res = csapi.call_post_form_data(f'{cshost}/otcs/cs.exe/api/v2/nodes', params, files)
+
+    # PUT API Call
+    params = {'body': json.dumps(category)}
+    res = self.call_put(f'{cshost}/otcs/cs.exe/api/v2/nodes/{node_id}/categories/{category_id}', params)
+
+    # DELETE API Call
+    res = self.call_delete(f'{cshost}/otcs/cs.exe/api/v2/nodes/{node_id}/categories/{category_id}')
 ```
 
 # Disclaimer
