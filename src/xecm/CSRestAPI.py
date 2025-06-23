@@ -327,6 +327,50 @@ class CSRestAPI:
                 retval += '/'
         return retval
 
+    def ping(self, base_url_cs: str) -> dict:
+        """Ping Content Server API with GET method.
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+        Returns:
+            dict: Result of API call. I.e. {'rest_api': [{'build': 2, 'href': 'api/v1', 'version': 1}]}
+
+        """
+        error_message = ''
+        retval = ''
+
+        # do REST API call to CS
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v1/ping'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        r = requests.get(url=url, headers={'Content-Type': 'application/json', 'User-Agent': self.__useragent})
+
+        if self.__logger:
+            self.__pretty_print_GET(r.request)
+
+        if r.ok:
+            try:
+                retval = json.loads(r.text)
+
+                if self.__logger:
+                    self.__logger.debug(f'-----------RESPONSE-----------\r\n{r.text}')
+
+            except Exception as innerErr:
+                error_message = f'Error in ping() -> {url}: {innerErr}\n{r.text}'
+                if self.__logger:
+                    self.__logger.error(error_message)
+                raise Exception(error_message)
+        else:
+            error_message = f'Error in ping() -> {url}: {r.status_code} {r.text}'
+            if self.__logger:
+                self.__logger.error(error_message)
+            raise Exception(error_message)
+
+        return retval
+
     def call_get(self, api_url: str, params: dict) -> str:
         """Generic Call Content Server API with GET method.
 
@@ -604,6 +648,35 @@ class CSRestAPI:
 
         return retval
 
+    def server_info(self, base_url_cs: str) -> dict:
+        """ Get Server Information and Configuration.
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+        Returns:
+            dict: information about server: { 'mobile': {}, 'server': {}, 'sessions': {}, 'smartUIConfig': {}, 'viewer': {}}
+
+        """
+        if self.__logger:
+            self.__logger.debug(f'server_info() start: {locals()}')
+        retval = {}
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v1/serverinfo'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        params = {}
+
+        res = self.call_get(url, params)
+
+        retval = json.loads(res)
+
+        if self.__logger:
+            self.__logger.debug(f'server_info() finished: {retval}')
+
+        return retval
+
     def node_get(self, base_url_cs: str, node_id: int, filter_properties: list, load_categories: bool, load_permissions: bool, load_classifications: bool) -> dict:
         """ Get Node Information - optionally include property filter, load category information, load permissions, load classifications.
 
@@ -632,7 +705,7 @@ class CSRestAPI:
         """
         if self.__logger:
             self.__logger.debug(f'node_get() start: {locals()}')
-        retval = { 'properties': {}, 'categories': [], 'permissions': [], 'classifications': []}
+        retval = { 'properties': {}, 'categories': [], 'permissions': { 'owner': {}, 'group': {}, 'public': {}, 'custom': [] }, 'classifications': []}
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/nodes/{node_id}'
         url = urllib.parse.urljoin(base_url, apiendpoint)
@@ -673,7 +746,18 @@ class CSRestAPI:
                     retval['categories'] = item["data"].get('categories', [])
 
                 if load_permissions:
-                    retval['permissions'] = item["data"].get('permissions', [])
+                    for perms in item["data"].get('permissions', []):
+                        if perms.get('type', ''):
+                            if perms['type'] == 'owner':
+                                retval['permissions']['owner'] = perms
+                            elif perms['type'] == 'group':
+                                retval['permissions']['group'] = perms
+                            elif perms['type'] == 'public':
+                                retval['permissions']['public'] = perms
+                            elif perms['type'] == 'custom':
+                                retval['permissions']['custom'].append(perms)
+                            else:
+                                raise Exception(f"Error in node_get() - permission type {perms['type']} is not supported.")
 
                 if load_classifications:
                     retval['classifications'] = self.node_classifications_get(base_url_cs, node_id, ['data'])
@@ -1465,13 +1549,24 @@ class CSRestAPI:
         if jres and jres.get('results', []):
             for item in jres.get('results', []):
                 if item.get('data', {}) and item.get('data', {}).get('properties', {}):
-                    line = {'properties': item["data"]["properties"], 'categories': [], 'permissions': [], 'classifications': []}
+                    line = {'properties': item["data"]["properties"], 'categories': [], 'permissions': { 'owner': {}, 'group': {}, 'public': {}, 'custom': [] }, 'classifications': []}
 
                     if load_categories:
                         line['categories'] = item["data"].get('categories', [])
 
                     if load_permissions:
-                        line['permissions'] = item["data"].get('permissions', [])
+                        for perms in item["data"].get('permissions', []):
+                            if perms.get('type', ''):
+                                if perms['type'] == 'owner':
+                                    line['permissions']['owner'] = perms
+                                elif perms['type'] == 'group':
+                                    line['permissions']['group'] = perms
+                                elif perms['type'] == 'public':
+                                    line['permissions']['public'] = perms
+                                elif perms['type'] == 'custom':
+                                    line['permissions']['custom'].append(perms)
+                                else:
+                                    raise Exception(f"Error in subnodes_get() - permission type {perms['type']} is not supported.")
 
                     if load_classifications and item["data"]["properties"].get('id'):
                         line['classifications'] = self.node_classifications_get(base_url_cs, item["data"]["properties"].get('id'), ['data'])
@@ -2993,20 +3088,633 @@ class CSRestAPI:
 
         return retval
 
+    def node_permissions_owner_apply(self, base_url_cs: str, node_id: int, new_perms: dict) -> int:
+        """ Apply the Owner Permissions to a Node
 
-    # todo: implement
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
 
+            node_id (int):
+                The Node ID to update.
 
-    # get permissions: node_get()
+            new_perms (dict):
+                The new Permissions. I.e. { "permissions":["see","see_contents"] } or { "permissions":["see","see_contents"], "right_id": 1000, "apply_to":0 }
+                The allowable values for permissions are:
+                "see"
+                "see_contents"
+                "modify"
+                "edit_attributes"
+                "add_items"
+                "reserve"
+                "add_major_version"
+                "delete_versions"
+                "delete"
+                "edit_permissions"
 
-    def node_permissions_apply(self):
-        # OwnerPermissions, GroupPermissions, PublicPermissions, CustomPermissions
-        pass
+                Apply the change to different levels:
+                0 This Item
+                1 Sub-Items
+                2 This Item and Sub-Items
+                3 This Item And Immediate Sub-Items
 
-    def webreport_nickname_call(self):
-        # Call webreport by nickname
-        pass
+        Returns:
+            int: the Node ID which is updated.
 
-    def workflow_start(self):
-        # Start Workflow
-        pass
+        """
+        if self.__logger:
+            self.__logger.debug(f'node_permissions_owner_apply() start: {locals()}')
+        retval = -1
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v2/nodes/{node_id}/permissions/owner'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        params = {'body': json.dumps(new_perms)}
+
+        res = self.call_put(url, params)
+
+        jres = json.loads(res)
+
+        if jres:
+            retval = node_id
+
+        if self.__logger:
+            self.__logger.debug(f'node_permissions_owner_apply() finished: {retval}')
+
+        return retval
+
+    def node_permissions_owner_delete(self, base_url_cs: str, node_id: int) -> int:
+        """ Delete the Owner Permissions from a Node
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            node_id (int):
+                The Node ID to update.
+
+        Returns:
+            int: the Node ID which is updated.
+
+        """
+        if self.__logger:
+            self.__logger.debug(f'node_permissions_owner_delete() start: {locals()}')
+        retval = -1
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v2/nodes/{node_id}/permissions/owner'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        res = self.call_delete(url)
+
+        jres = json.loads(res)
+
+        if jres:
+            retval = node_id
+
+        if self.__logger:
+            self.__logger.debug(f'node_permissions_owner_delete() finished: {retval}')
+
+        return retval
+
+    def node_permissions_group_apply(self, base_url_cs: str, node_id: int, new_perms: dict) -> int:
+        """ Apply the Group Permissions to a Node
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            node_id (int):
+                The Node ID to update.
+
+            new_perms (dict):
+                The new Permissions. I.e. { "permissions":["see","see_contents"] } or { "permissions":["see","see_contents"], "right_id": 2001, "apply_to":0 }
+                The allowable values for permissions are:
+                "see"
+                "see_contents"
+                "modify"
+                "edit_attributes"
+                "add_items"
+                "reserve"
+                "add_major_version"
+                "delete_versions"
+                "delete"
+                "edit_permissions"
+
+                Apply the change to different levels:
+                0 This Item
+                1 Sub-Items
+                2 This Item and Sub-Items
+                3 This Item And Immediate Sub-Items
+
+        Returns:
+            int: the Node ID which is updated.
+
+        """
+        if self.__logger:
+            self.__logger.debug(f'node_permissions_group_apply() start: {locals()}')
+        retval = -1
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v2/nodes/{node_id}/permissions/group'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        params = {'body': json.dumps(new_perms)}
+
+        res = self.call_put(url, params)
+
+        jres = json.loads(res)
+
+        if jres:
+            retval = node_id
+
+        if self.__logger:
+            self.__logger.debug(f'node_permissions_group_apply() finished: {retval}')
+
+        return retval
+
+    def node_permissions_group_delete(self, base_url_cs: str, node_id: int) -> int:
+        """ Delete the Group Permissions from a Node
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            node_id (int):
+                The Node ID to update.
+
+        Returns:
+            int: the Node ID which is updated.
+
+        """
+        if self.__logger:
+            self.__logger.debug(f'node_permissions_group_delete() start: {locals()}')
+        retval = -1
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v2/nodes/{node_id}/permissions/group'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        res = self.call_delete(url)
+
+        jres = json.loads(res)
+
+        if jres:
+            retval = node_id
+
+        if self.__logger:
+            self.__logger.debug(f'node_permissions_group_delete() finished: {retval}')
+
+        return retval
+
+    def node_permissions_public_apply(self, base_url_cs: str, node_id: int, new_perms: dict) -> int:
+        """ Apply the Public Permissions to a Node
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            node_id (int):
+                The Node ID to update.
+
+            new_perms (dict):
+                The new Permissions. I.e. { "permissions":["see","see_contents"] } or { "permissions":["see","see_contents"], "apply_to":0 }
+                There is no "right_id" as it is public.
+                The allowable values for permissions are:
+                "see"
+                "see_contents"
+                "modify"
+                "edit_attributes"
+                "add_items"
+                "reserve"
+                "add_major_version"
+                "delete_versions"
+                "delete"
+                "edit_permissions"
+
+                Apply the change to different levels:
+                0 This Item
+                1 Sub-Items
+                2 This Item and Sub-Items
+                3 This Item And Immediate Sub-Items
+
+        Returns:
+            int: the Node ID which is updated.
+
+        """
+        if self.__logger:
+            self.__logger.debug(f'node_permissions_public_apply() start: {locals()}')
+        retval = -1
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v2/nodes/{node_id}/permissions/public'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        params = {'body': json.dumps(new_perms)}
+
+        res = self.call_put(url, params)
+
+        jres = json.loads(res)
+
+        if jres:
+            retval = node_id
+
+        if self.__logger:
+            self.__logger.debug(f'node_permissions_public_apply() finished: {retval}')
+
+        return retval
+
+    def node_permissions_public_delete(self, base_url_cs: str, node_id: int) -> int:
+        """ Delete the Public Permissions from a Node
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            node_id (int):
+                The Node ID to update.
+
+        Returns:
+            int: the Node ID which is updated.
+
+        """
+        if self.__logger:
+            self.__logger.debug(f'node_permissions_public_delete() start: {locals()}')
+        retval = -1
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v2/nodes/{node_id}/permissions/public'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        res = self.call_delete(url)
+
+        jres = json.loads(res)
+
+        if jres:
+            retval = node_id
+
+        if self.__logger:
+            self.__logger.debug(f'node_permissions_public_delete() finished: {retval}')
+
+        return retval
+
+    def node_permissions_custom_apply(self, base_url_cs: str, node_id: int, new_perms: list) -> int:
+        """ Add new Custom Permissions to a Node
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            node_id (int):
+                The Node ID to update.
+
+            new_perms (list):
+                The new Permissions. I.e. [{"permissions":["see", "see_contents", "modify"], "right_id": 1001}] or [{"permissions":["see", "see_contents", "modify"], "right_id": 1001, "apply_to": 0}]
+                The allowable values for permissions are:
+                "see"
+                "see_contents"
+                "modify"
+                "edit_attributes"
+                "add_items"
+                "reserve"
+                "add_major_version"
+                "delete_versions"
+                "delete"
+                "edit_permissions"
+
+                Apply the change to different levels:
+                0 This Item
+                1 Sub-Items
+                2 This Item and Sub-Items
+                3 This Item And Immediate Sub-Items
+
+        Returns:
+            int: the Node ID which is updated.
+
+        """
+        if self.__logger:
+            self.__logger.debug(f'node_permissions_custom_add() start: {locals()}')
+        retval = -1
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v2/nodes/{node_id}/permissions/custom/bulk'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        params = {'permissions_array': json.dumps(new_perms)}
+
+        res = self.call_post_form_url_encoded(url, params)
+
+        jres = json.loads(res)
+
+        if jres:
+            retval = node_id
+
+        if self.__logger:
+            self.__logger.debug(f'node_permissions_custom_add() finished: {retval}')
+
+        return retval
+
+    def node_permissions_custom_update(self, base_url_cs: str, node_id: int, right_id: int, new_perms: dict) -> int:
+        """ Update the Custom Permissions of a specific Right ID to a Node
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            node_id (int):
+                The Node ID to update.
+
+            right_id (int):
+                The Content Server User or Group ID to update.
+
+            new_perms (dict):
+                The new Permissions. I.e. { "permissions":["see","see_contents"] } or { "permissions":["see","see_contents"], "apply_to":0 }
+                There is no "right_id" in the dict structure here as it is passed as a URL parameter.
+                The allowable values for permissions are:
+                "see"
+                "see_contents"
+                "modify"
+                "edit_attributes"
+                "add_items"
+                "reserve"
+                "add_major_version"
+                "delete_versions"
+                "delete"
+                "edit_permissions"
+
+                Apply the change to different levels:
+                0 This Item
+                1 Sub-Items
+                2 This Item and Sub-Items
+                3 This Item And Immediate Sub-Items
+
+        Returns:
+            int: the Node ID which is updated.
+
+        """
+        if self.__logger:
+            self.__logger.debug(f'node_permissions_custom_update() start: {locals()}')
+        retval = -1
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v2/nodes/{node_id}/permissions/custom/{right_id}'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        params = {'body': json.dumps(new_perms)}
+
+        res = self.call_put(url, params)
+
+        jres = json.loads(res)
+
+        if jres:
+            retval = node_id
+
+        if self.__logger:
+            self.__logger.debug(f'node_permissions_custom_update() finished: {retval}')
+
+        return retval
+
+    def node_permissions_custom_delete(self, base_url_cs: str, node_id: int, right_id: int) -> int:
+        """ Delete the Custom Permissions of a specific Right ID from a Node
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            node_id (int):
+                The Node ID to update.
+
+            right_id (int):
+                The Content Server User or Group ID to update.
+
+        Returns:
+            int: the Node ID which is updated.
+
+        """
+        if self.__logger:
+            self.__logger.debug(f'node_permissions_custom_delete() start: {locals()}')
+        retval = -1
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v2/nodes/{node_id}/permissions/custom/{right_id}'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        res = self.call_delete(url)
+
+        jres = json.loads(res)
+
+        if jres:
+            retval = node_id
+
+        if self.__logger:
+            self.__logger.debug(f'node_permissions_custom_delete() finished: {retval}')
+
+        return retval
+
+    def webreport_nickname_call(self, base_url_cs: str, nickname: str, params: dict) -> str:
+        """ Call WebReport by Nickname and pass Parameters by POST method (form-data)
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            nickname (str):
+                The Nickname of the WebReport.
+
+            params (dict):
+                The Parameters to be passed to the WebReport. I.e. { "p_name": "name", "p_desc": "description" }
+
+        Returns:
+            str: the Result of the WebReport
+
+        """
+        if self.__logger:
+            self.__logger.debug(f'webreport_nickname_call() start: {locals()}')
+        retval = ''
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v1/webreports/{nickname}'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        if not 'format' in params:
+            params['format'] = 'webreport'
+
+        retval = self.call_post_form_data(url, params, {})
+
+        if self.__logger:
+            self.__logger.debug(f'webreport_nickname_call() finished: {retval}')
+
+        return retval
+
+    def webreport_nodeid_call(self, base_url_cs: str, node_id: int, params: dict) -> str:
+        """ Call WebReport by Nickname and pass Parameters by POST method (form-data)
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            node_id (int):
+                The NodeID of the WebReport.
+
+            params (dict):
+                The Parameters to be passed to the WebReport. I.e. { "p_name": "name", "p_desc": "description" }
+
+        Returns:
+            str: the Result of the WebReport
+
+        """
+        if self.__logger:
+            self.__logger.debug(f'webreport_nodeid_call() start: {locals()}')
+        retval = ''
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v1/nodes/{node_id}/output'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        if not 'format' in params:
+            params['format'] = 'webreport'
+
+        retval = self.call_post_form_data(url, params, {})
+
+        if self.__logger:
+            self.__logger.debug(f'webreport_nodeid_call() finished: {retval}')
+
+        return retval
+
+    def workflows_document_get_available(self, base_url_cs: str, parent_id: int, document_id: int) -> list:
+        """ Get available Document Workflows
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            parent_id (int):
+                The Node ID of the Parent in which the Document is stored.
+
+            document_id (int):
+                The Node ID of the Document for which the workflow is looked up for.
+
+        Returns:
+            list: available workflows
+
+        """
+        if self.__logger:
+            self.__logger.debug(f'workflows_document_get_available() start: {locals()}')
+        retval = []
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v2/docworkflows'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        params = { 'doc_id': document_id, 'parent_id': parent_id }
+
+        res = self.call_get(url, params)
+
+        jres = json.loads(res)
+
+        if jres and jres.get('results', {}) and jres['results'].get('data', []):
+            retval = jres['results'].get('data', [])
+
+        if self.__logger:
+            self.__logger.debug(f'workflows_document_get_available() finished: {retval}')
+
+        return retval
+
+    def workflows_document_draft_create(self, base_url_cs: str, workflow_id: int, document_ids: str) -> dict:
+        """ Create a new Draft Process for the Document Workflow
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            workflow_id (int):
+                The ID of the workflow to be created.
+
+            document_ids (str):
+                The Node IDs of the Documents for which the workflow is created. I.e. "130480" or "130480,132743"
+
+        Returns:
+            dict: Result of the draftprocess creation. I.e. { "draftprocess_id": 134043, "workflow_type": "1_1" }
+
+        """
+        if self.__logger:
+            self.__logger.debug(f'workflows_document_draft_create() start: {locals()}')
+        retval = {}
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v2/draftprocesses'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        data = { 'workflow_id': workflow_id, 'doc_ids': document_ids }
+        params = { 'body': json.dumps(data) }
+
+        res = self.call_post_form_data(url, params, {})
+
+        jres = json.loads(res)
+
+        if jres and jres.get('results', {}):
+            retval = jres.get('results', {})
+
+        if self.__logger:
+            self.__logger.debug(f'workflows_document_draft_create() finished: {retval}')
+
+        return retval
+
+    def workflows_document_draft_form_get(self, base_url_cs: str, draft_id: int) -> dict:
+        """ Get form for the Draft Process
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            draft_id (int):
+                The ID of the Draft Process.
+
+        Returns:
+            dict: Result of the form information of the draftprocess. I.e. { 'data': {...}, 'forms': [...] }
+
+        """
+        if self.__logger:
+            self.__logger.debug(f'workflows_document_draft_form_get() start: {locals()}')
+        retval = {}
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v1/forms/draftprocesses/update'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        params = { 'draftprocess_id': draft_id }
+
+        res = self.call_get(url, params)
+
+        retval = json.loads(res)
+
+        if self.__logger:
+            self.__logger.debug(f'workflows_document_draft_form_get() finished: {retval}')
+
+        return retval
+
+    def workflows_document_draft_initiate(self, base_url_cs: str, draft_id: int, comment: str) -> dict:
+        """ Initiate the Draft Process
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            draft_id (int):
+                The ID of the Draft Process.
+
+            comment (str):
+                The comment to be applied to the Initiation Draft Process.
+
+        Returns:
+            dict: Result of the draftprocess initiation. I.e. {'custom_message': None, 'process_id': 134687, 'WorkID': None, 'WRID': None}
+
+        """
+        if self.__logger:
+            self.__logger.debug(f'workflows_document_draft_initiate() start: {locals()}')
+        retval = {}
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v2/draftprocesses/{draft_id}'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        data = { 'action': 'Initiate', 'comment': comment }
+        params = { 'body': json.dumps(data) }
+
+        res = self.call_put(url, params)
+
+        jres = json.loads(res)
+
+        if jres and jres.get('results', {}):
+            retval = jres.get('results', {})
+
+        if self.__logger:
+            self.__logger.debug(f'workflows_document_draft_initiate() finished: {retval}')
+
+        return retval

@@ -22,15 +22,32 @@ logging.basicConfig(format='%(asctime)s [%(levelname)s] %(message)s', datefmt='%
 
 if __name__ == '__main__':
     deflogger = logging.getLogger("mylogger")
-    
+    cshost = 'http://otcs.phil.local'
+    dshost = 'http://otds.phil.local'
+
     # get OTCSTicket with username and password
-    login = xecm.XECMLogin(xecm.LoginType.OTCS_TICKET, 'http://otcs.phil.local/otcs/cs.exe', 'myuser', 's#cret', deflogger)
+    csapi = xecm.CSRestAPI(xecm.LoginType.OTCS_TICKET, cshost, 'myuser', 's#cret', deflogger)
 
     # get OTDSTicket with username and password
-    login = xecm.XECMLogin(xecm.LoginType.OTDS_TICKET, 'http://otds.phil.local', 'myuser@partition', 's#cret', deflogger)
+    csapi = xecm.CSRestAPI(xecm.LoginType.OTDS_TICKET, dshost, 'myuser@partition', 's#cret', deflogger)
 
     # get OTDS Bearer Token with client id and client secret
-    login = xecm.XECMLogin(xecm.LoginType.OTDS_BEARER, 'http://otds.phil.local', 'oauth-user', 'gU5p8....4KZ', deflogger)
+    csapi = xecm.CSRestAPI(xecm.LoginType.OTDS_BEARER, dshost, 'oauth-user', 'gU5p8....4KZ', deflogger)
+
+# ...
+
+    nodeId = 130480
+    res = csapi.node_get(f'{cshost}/otcs/cs.exe', nodeId, ['id', 'name', 'type', 'type_name'], False, False, False)
+    print(res)
+    # {
+    #   'properties': {'id': 130480, 'name': 'Bewerbung-Phil-Egger-2020.pdf', 'type': 144, 'type_name': 'Document'}, 
+    #   'categories': [], 
+    #   'permissions': {'owner': {}, 'group': {}, 'public': {}, 'custom': []}, 
+    #   'classifications': []
+    # }
+
+
+
 
 ```
 
