@@ -45,12 +45,200 @@ if __name__ == '__main__':
     #   'permissions': {'owner': {}, 'group': {}, 'public': {}, 'custom': []}, 
     #   'classifications': []
     # }
-
-
-
-
 ```
 
+## Available Logins: OTCSTicket, OTDSTicket or OTDS Bearer Token
+```python
+    # get OTCSTicket with username and password
+    csapi = xecm.CSRestAPI(xecm.LoginType.OTCS_TICKET, cshost, 'myuser', 's#cret', deflogger)
+
+    # get OTDSTicket with username and password
+    csapi = xecm.CSRestAPI(xecm.LoginType.OTDS_TICKET, dshost, 'myuser@partition', 's#cret', deflogger)
+
+    # get OTDS Bearer Token with client id and client secret
+    csapi = xecm.CSRestAPI(xecm.LoginType.OTDS_BEARER, dshost, 'oauth-user', 'gU5p8....4KZ', deflogger)
+```
+
+## Node Functions (folder, document, ...)
+```python
+    # get node information - min -> load only some fields
+    res = csapi.node_get(f'{cshost}/otcs/cs.exe', nodeId, ['id', 'name', 'type', 'type_name'], False, False, False)
+
+    # get node information - max -> load all fields, incl. categories, incl. permissions, incl. classifications
+    res = csapi.node_get(f'{cshost}/otcs/cs.exe', nodeId, [], True, True, True)
+
+    # get sub nodes - min
+    res = csapi.subnodes_get(f'{cshost}/otcs/cs.exe', nodeId, ['id', 'name'], False, False, False, 1)  # page 1 contains 200 sub items
+
+    # get sub nodes - load categories
+    res = csapi.subnodes_get(f'{cshost}/otcs/cs.exe', nodeId, ['id', 'name'], True, False, False, 1)  # page 1 contains 20 sub items
+
+    # get sub nodes - load permissions
+    res = csapi.subnodes_get(f'{cshost}/otcs/cs.exe', nodeId, ['id', 'name'], False, True, False, 1)  # page 1 contains 20 sub items
+
+    # get sub nodes - load classifications
+    res = csapi.subnodes_get(f'{cshost}/otcs/cs.exe', nodeId, ['id', 'name'], False, False, True, 1)  # page 1 contains 10 sub items
+
+    # filter subnodes
+    res = csapi.subnodes_filter(f'{cshost}/otcs/cs.exe', 30622, 'OTHCM_WS_Employee_Categories', False, True)
+
+    # create new node - min
+    res = csapi.node_create(f'{cshost}/otcs/cs.exe', parentId, 0, 'test', 'test', {}, {} )
+
+    # create new node - with multiple metadata names
+    res = csapi.node_create(f'{cshost}/cs/cs.exe', nodeId, 0, 'test', 'test', { 'en': 'test en', 'de': 'test de'}, { 'en': 'desc en', 'de': 'desc de'} )
+    
+    # update name and description of a node (folder, document, ...) - min
+    res = csapi.node_update(f'{cshost}/cs/cs.exe', nodeId, 0, 'test1', 'desc1', {}, {}, {})
+
+    # move node and apply categories
+    cats = { '1279234_2': 'test' }
+    res = csapi.node_update(f'{cshost}/cs/cs.exe', nodeId, newDestId, '', '', {}, {}, cats)
+
+    # delete a node
+    res = csapi.node_delete(f'{cshost}/cs/cs.exe', nodeId)
+```
+
+## Category Functions (Metadata)
+```python
+    # get node information and load categories
+    res = csapi.node_get(f'{cshost}/otcs/cs.exe', nodeId, ['id', 'name'], True, False, False)
+
+    # add category to node
+    res = csapi.node_category_add(f'{cshost}/otcs/cs.exe', nodeId, { "category_id": 32133, "32133_2": "8000", "32133_39": ["test 1", "test 2"], "32133_33_1_34": "Org Unit 1", "32133_33_1_35": "Org Unit Desc 1", "32133_33_2_34": "Org Unit 2", "32133_33_2_35": "Org Unit Desc 2" } )
+
+    # update category on a node
+    res = csapi.node_category_update(f'{cshost}/otcs/cs.exe', nodeId, 32133, { "32133_2": "8000", "32133_39": ["test 1", "test 2"], "32133_33_1_34": "Org Unit 1", "32133_33_1_35": "Org Unit Desc 1", "32133_33_2_34": "Org Unit 2", "32133_33_2_35": "Org Unit Desc 2" } )
+    
+    # delete category from a node
+    res = csapi.node_category_delete(f'{cshost}/otcs/cs.exe', nodeId, 32133)
+
+    # read category information
+    res = csapi.category_attribute_id_get(f'{cshost}/otcs/cs.exe', 'Content Server Categories:SuccessFactors:OTHCM_WS_Employee_Categories:Personal Information', 'User ID')
+    # {
+    #   'category_id': 30643, 
+    #   'category_name': 'Personal Information', 
+    #   'attribute_key': '30643_26', 
+    #   'attribute_name': 'User ID'
+    # }
+```
+
+## Classification Functions
+```python
+    # get node information and load classifications
+    res = csapi.node_get(f'{cshost}/otcs/cs.exe', nodeId, ['id', 'name'], False, False, True)
+
+    # apply classifications to node
+    res = csapi.node_classifications_apply(f'{cshost}/otcs/cs.exe', nodeId, False, [120571,120570])
+    
+    # same function to remove classification 120570 from node
+    res = csapi.node_classifications_apply(f'{cshost}/otcs/cs.exe', nodeId, False, [120571])
+```
+
+## Permission Functions
+```python
+    # get node information and load permissions
+    res = csapi.node_get(f'{cshost}/otcs/cs.exe', nodeId, ['id', 'name'], False, True, False)
+
+    # apply owner permissions on node
+    res = csapi.node_permissions_owner_apply(f'{cshost}/otcs/cs.exe', nodeId, { "permissions":["delete","delete_versions","edit_attributes","edit_permissions","modify","reserve","see","see_contents"], "right_id": 1000 })
+
+    # delete owner permission from node
+    res = csapi.node_permissions_owner_delete(f'{cshost}/otcs/cs.exe', nodeId)
+
+    # apply group permissions on node
+    res = csapi.node_permissions_group_apply(f'{cshost}/otcs/cs.exe', nodeId, {"permissions":["delete","delete_versions","edit_attributes","edit_permissions","modify","reserve","see","see_contents"], "right_id": 2001 })
+
+    # delete group permission from node
+    res = csapi.node_permissions_group_delete(f'{cshost}/otcs/cs.exe', nodeId)
+
+    # apply public permissions on node
+    res = csapi.node_permissions_public_apply(f'{cshost}/otcs/cs.exe', nodeId, {"permissions":["delete","delete_versions","edit_attributes","edit_permissions","modify","reserve","see","see_contents"] })
+
+    # delete public permission from node
+    res = csapi.node_permissions_public_delete(f'{cshost}/otcs/cs.exe', nodeId)
+
+    # apply a new custom permissions on node
+    res = csapi.node_permissions_custom_apply(f'{cshost}/otcs/cs.exe', nodeId, [{"permissions":["see","see_contents"], "right_id": 1001 }])
+
+    # update an existing custom permissions on node
+    res = csapi.node_permissions_custom_update(f'{cshost}/otcs/cs.exe', nodeId, 2001, {"permissions":["delete","delete_versions","edit_attributes","edit_permissions","modify","reserve","see","see_contents"] })
+
+    # delete a custom permissions from node
+    res = csapi.node_permissions_custom_delete(f'{cshost}/otcs/cs.exe', nodeId, 1001)
+```
+
+## Smart Document Types Functions
+```python
+    # get all smart document types
+    res = csapi.smartdoctypes_get_all(f'{cshost}/otcs/cs.exe')
+    for smartdoctype in res:
+        print(f"{smartdoctype['workspace_template_names']} - {smartdoctype['dataId']} - {smartdoctype['name']} --> {smartdoctype['classification_id']} - {smartdoctype['classification_name']}")
+
+    # get rules of a smart document type
+    smartDocTypeId = smartdoctype['dataId']
+    res = csapi.smartdoctypes_rules_get(f'{cshost}/otcs/cs.exe', smartDocTypeId)
+    for smartdoctype in res:
+        print(f"{smartdoctype['template_name']} ({smartdoctype['template_id']}) - {smartdoctype['smartdocumenttype_id']} - RuleID: {smartdoctype['rule_id']} / DocGen: {smartdoctype['document_generation']} --> Classification: {smartdoctype['classification_id']} --> Location: {smartdoctype['location']}")
+
+    # get rule detail
+    ruleId = smartdoctype['rule_id']
+    res = csapi.smartdoctype_rule_detail_get(f'{cshost}/otcs/cs.exe', ruleId)
+    for rule_tab in res:
+        print(f"tab: {rule_tab['bot_key']} - data: {rule_tab['data']}")
+
+    # create smart document type under "Smart Document Types" root folder 6004 (id is different per system) -> see get_volumes() function
+    res = csapi.smartdoctype_add(f'{cshost}/otcs/cs.exe', 6004, categoryId, 'smart doc test')
+
+    # add workspace template to rule
+    res = csapi.smartdoctype_workspacetemplate_add(f'{cshost}/otcs/cs.exe', smartDocTypeId, classificationId, templateId)
+    # {
+    #   'is_othcm_template': True, 
+    #   'ok': True, 
+    #   'rule_id': 11, 
+    #   'statusCode': 200
+    # }
+
+    # add workspace template to rule -> get locationId with path_to_id() function
+    location = csapi.path_to_id(f'{cshost}/otcs/cs.exe', 'Content Server Document Templates:SuccessFactors:Employee CHE:01 Entry Documents:110 Recruiting / Application')
+    # {'id': 120603, 'name': '110 Recruiting / Application'}
+    locationId = location.get('id', 0)
+    res = csapi.smartdoctype_rule_context_save(f'{cshost}/otcs/cs.exe', ruleId, categoryId, locationId, 'update')
+    # {
+    #   'ok': True, 
+    #   'statusCode': 200, 
+    #   'updatedAttributeIds': [2], 
+    #   'updatedAttributeNames': ['Date of Origin']
+    # }
+
+    # add 'mandatory' tab in rule
+    res = csapi.smartdoctype_rule_mandatory_save(f'{cshost}/otcs/cs.exe', ruleId, True, 'add')
+
+    # update 'mandatory' tab in rule
+    res = csapi.smartdoctype_rule_mandatory_save(f'{cshost}/otcs/cs.exe', ruleId, False, 'update')
+
+    # delete 'mandatory' tab in rule
+    res = csapi.smartdoctype_rule_mandatory_delete(f'{cshost}/otcs/cs.exe', ruleId)
+
+    # add 'document expiration' tab in rule
+    res = csapi.smartdoctype_rule_documentexpiration_save(f'{cshost}/otcs/cs.exe', ruleId, True, 2, 0, 6, 'add')
+
+    # update 'document expiration' tab in rule
+    res = csapi.smartdoctype_rule_documentexpiration_save(f'{cshost}/otcs/cs.exe', ruleId, False, 2, 0, 4, 'update')
+
+    # delete 'document expiration' tab in rule
+    res = csapi.smartdoctype_rule_documentexpiration_delete(f'{cshost}/otcs/cs.exe', ruleId)
+
+    # add 'document generation' tab in rule
+    res = csapi.smartdoctype_rule_generatedocument_save(f'{cshost}/otcs/cs.exe', ruleId, True, 'add')
+
+    # update 'document generation' tab in rule
+    res = csapi.smartdoctype_rule_generatedocument_save(f'{cshost}/otcs/cs.exe', ruleId, False, 'update')
+
+    # delete 'document generation' tab in rule
+    res = csapi.smartdoctype_rule_generatedocument_delete(f'{cshost}/otcs/cs.exe', ruleId)
+
+```
 
 # Disclaimer
 
