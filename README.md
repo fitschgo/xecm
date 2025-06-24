@@ -26,7 +26,7 @@ if __name__ == '__main__':
     dshost = 'http://otds.phil.local'
 
     # get OTCSTicket with username and password
-    csapi = xecm.CSRestAPI(xecm.LoginType.OTCS_TICKET, cshost, 'myuser', 's#cret', True, deflogger)
+    csapi = xecm.CSRestAPI(xecm.LoginType.OTCS_TICKET, f'{cshost}/otcs/cs.exe', 'myuser', 's#cret', True, deflogger)
 
     # get OTDSTicket with username and password
     csapi = xecm.CSRestAPI(xecm.LoginType.OTDS_TICKET, dshost, 'myuser@partition', 's#cret', True, deflogger)
@@ -400,7 +400,7 @@ if __name__ == '__main__':
     res = csapi.webreport_nodeid_call(f'{cshost}/otcs/cs.exe', wr_id, {'p_name': 'name', 'p_desc': 'description'})
 ```
 
-## Servier Information Functions
+## Server Information Functions
 ```python
     # ping Content Server
     res = csapi.ping(f'{cshost}/otcs/cs.exe')
