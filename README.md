@@ -37,14 +37,20 @@ if __name__ == '__main__':
     # ...
 
     nodeId = 130480
-    res = csapi.node_get(f'{cshost}/otcs/cs.exe', nodeId, ['id', 'name', 'type', 'type_name'], False, False, False)
-    print(res)
-    # {
-    #   'properties': {'id': 130480, 'name': 'Bewerbung-Phil-Egger-2020.pdf', 'type': 144, 'type_name': 'Document'}, 
-    #   'categories': [], 
-    #   'permissions': {'owner': {}, 'group': {}, 'public': {}, 'custom': []}, 
-    #   'classifications': []
-    # }
+    try:
+        res = csapi.node_get(f'{cshost}/otcs/cs.exe', nodeId, ['id', 'name', 'type', 'type_name'], False, False, False)
+        print(res)
+        # {
+        #   'properties': {'id': 130480, 'name': 'Bewerbung-Phil-Egger-2020.pdf', 'type': 144, 'type_name': 'Document'}, 
+        #   'categories': [], 
+        #   'permissions': {'owner': {}, 'group': {}, 'public': {}, 'custom': []}, 
+        #   'classifications': []
+        # }
+    except xecm.LoginTimeoutException as lex:
+        print(f'Ticket has been invalidated since last login (timeout) - do a re-login: {lex}')
+    except Exception as gex:
+        print(f'General Error: {gex}')
+
 ```
 
 ## Available Logins: OTCSTicket, OTDSTicket or OTDS Bearer Token
@@ -84,6 +90,9 @@ if __name__ == '__main__':
 
     # search nodes
     res = csapi.search(f'{cshost}/otcs/cs.exe', 'Documents', 0, baseFolderId, 1)
+
+    # get details of several nodes - max 250 entries
+    res = csapi.nodes_get_details(f'{cshost}/otcs/cs.exe', [ 30724, 30728, 30729 ])
 
     # create new node - min
     res = csapi.node_create(f'{cshost}/otcs/cs.exe', parentId, 0, 'test', 'test', {}, {} )

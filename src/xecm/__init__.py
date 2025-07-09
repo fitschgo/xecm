@@ -2,5 +2,6 @@
 
 from .CSRestAPI import CSRestAPI
 from .CSRestAPI import LoginType
+from .CSRestAPI import LoginTimeoutException
 
-__all__ = ["CSRestAPI", "LoginType"]
+__all__ = ["CSRestAPI", "LoginType", "LoginTimeoutException"]

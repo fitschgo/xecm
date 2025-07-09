@@ -13,6 +13,9 @@ import json
 import os
 from datetime import datetime
 
+class LoginTimeoutException(Exception):
+    pass
+
 class LoginType(enum.Enum):
     OTCS_TICKET = enum.auto()
     OTDS_TICKET = enum.auto()
@@ -425,10 +428,16 @@ class CSRestAPI:
                     self.__logger.error(error_message)
                 raise Exception(error_message)
         else:
-            error_message = f'Error in call_get() -> {api_url}: {r.status_code} {r.text}'
-            if self.__logger:
-                self.__logger.error(error_message)
-            raise Exception(error_message)
+            if r.status_code == 401:
+                error_message = f'Error in call_get() -> {api_url}: {r.status_code} {r.text}'
+                if self.__logger:
+                    self.__logger.error(error_message)
+                raise LoginTimeoutException(error_message)
+            else:
+                error_message = f'Error in call_get() -> {api_url}: {r.status_code} {r.text}'
+                if self.__logger:
+                    self.__logger.error(error_message)
+                raise Exception(error_message)
 
         return retval
 
@@ -480,10 +489,16 @@ class CSRestAPI:
                     self.__logger.error(error_message)
                 raise Exception(error_message)
         else:
-            error_message = f'Error in call_post_form_url_encoded() -> {api_url}: {r.status_code} {r.text}'
-            if self.__logger:
-                self.__logger.error(error_message)
-            raise Exception(error_message)
+            if r.status_code == 401:
+                error_message = f'Error in call_post_form_url_encoded() -> {api_url}: {r.status_code} {r.text}'
+                if self.__logger:
+                    self.__logger.error(error_message)
+                raise LoginTimeoutException(error_message)
+            else:
+                error_message = f'Error in call_post_form_url_encoded() -> {api_url}: {r.status_code} {r.text}'
+                if self.__logger:
+                    self.__logger.error(error_message)
+                raise Exception(error_message)
 
         return retval
 
@@ -538,10 +553,16 @@ class CSRestAPI:
                     self.__logger.error(error_message)
                 raise Exception(error_message)
         else:
-            error_message = f'Error in call_post_form_data() -> {api_url}: {r.status_code} {r.text}'
-            if self.__logger:
-                self.__logger.error(error_message)
-            raise Exception(error_message)
+            if r.status_code == 401:
+                error_message = f'Error in call_post_form_data() -> {api_url}: {r.status_code} {r.text}'
+                if self.__logger:
+                    self.__logger.error(error_message)
+                raise LoginTimeoutException(error_message)
+            else:
+                error_message = f'Error in call_post_form_data() -> {api_url}: {r.status_code} {r.text}'
+                if self.__logger:
+                    self.__logger.error(error_message)
+                raise Exception(error_message)
 
         return retval
 
@@ -593,10 +614,16 @@ class CSRestAPI:
                     self.__logger.error(error_message)
                 raise Exception(error_message)
         else:
-            error_message = f'Error in call_put() -> {api_url}: {r.status_code} {r.text}'
-            if self.__logger:
-                self.__logger.error(error_message)
-            raise Exception(error_message)
+            if r.status_code == 401:
+                error_message = f'Error in call_put() -> {api_url}: {r.status_code} {r.text}'
+                if self.__logger:
+                    self.__logger.error(error_message)
+                raise LoginTimeoutException(error_message)
+            else:
+                error_message = f'Error in call_put() -> {api_url}: {r.status_code} {r.text}'
+                if self.__logger:
+                    self.__logger.error(error_message)
+                raise Exception(error_message)
 
         return retval
 
@@ -640,15 +667,21 @@ class CSRestAPI:
                     self.__logger.debug(f'-----------RESPONSE-----------\r\n{r.text}')
 
             except Exception as innerErr:
-                error_message = f'Error in call_get() -> {api_url}: {innerErr}\n{r.text}'
+                error_message = f'Error in call_delete() -> {api_url}: {innerErr}\n{r.text}'
                 if self.__logger:
                     self.__logger.error(error_message)
                 raise Exception(error_message)
         else:
-            error_message = f'Error in call_get() -> {api_url}: {r.status_code} {r.text}'
-            if self.__logger:
-                self.__logger.error(error_message)
-            raise Exception(error_message)
+            if r.status_code == 401:
+                error_message = f'Error in call_delete() -> {api_url}: {r.status_code} {r.text}'
+                if self.__logger:
+                    self.__logger.error(error_message)
+                raise LoginTimeoutException(error_message)
+            else:
+                error_message = f'Error in call_delete() -> {api_url}: {r.status_code} {r.text}'
+                if self.__logger:
+                    self.__logger.error(error_message)
+                raise Exception(error_message)
 
         return retval
 
@@ -1097,10 +1130,16 @@ class CSRestAPI:
                     self.__logger.debug(f'-----------RESPONSE-----------\r\n{retval}')
 
         except Exception as innerErr:
-            error_message = f'Error in node_download() -> {url}: {innerErr}\n{r.text}'
-            if self.__logger:
-                self.__logger.error(error_message)
-            raise Exception(error_message)
+            if r.status_code == 401:
+                error_message = f'Error in node_download() - Invalid Ticket -> {url}: {innerErr}\n{r.text}'
+                if self.__logger:
+                    self.__logger.error(error_message)
+                raise LoginTimeoutException(error_message)
+            else:
+                error_message = f'Error in node_download() -> {url}: {innerErr}\n{r.text}'
+                if self.__logger:
+                    self.__logger.error(error_message)
+                raise Exception(error_message)
 
         if self.__logger:
             self.__logger.debug(f'node_download_file() finished: {retval}')
@@ -1169,10 +1208,16 @@ class CSRestAPI:
                     self.__logger.debug(f'-----------RESPONSE-----------\r\n{retval}')
 
         except Exception as innerErr:
-            error_message = f'Error in node_download() -> {url}: {innerErr}\n{r.text}'
-            if self.__logger:
-                self.__logger.error(error_message)
-            raise Exception(error_message)
+            if r.status_code == 401:
+                error_message = f'Error in node_download_bytes() - Invalid Ticket -> {url}: {innerErr}\n{r.text}'
+                if self.__logger:
+                    self.__logger.error(error_message)
+                raise LoginTimeoutException(error_message)
+            else:
+                error_message = f'Error in node_download_bytes() -> {url}: {innerErr}\n{r.text}'
+                if self.__logger:
+                    self.__logger.error(error_message)
+                raise Exception(error_message)
 
         if self.__logger:
             self.__logger.debug(f'node_download_bytes() finished: {retval}')
@@ -3732,3 +3777,47 @@ class CSRestAPI:
             self.__logger.debug(f'workflows_document_draft_initiate() finished: {retval}')
 
         return retval
+
+    def nodes_get_details(self, base_url_cs: str, node_ids: list) -> dict:
+        """ Get Details of serveral Nodes. Maximum of 250 Node IDs supported.
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            node_ids (list):
+                The List of Nodes to get the details
+
+        Returns:
+            dict: node information with structure: { '<nodeid1>': {}, '<nodeid2>': {}}
+
+        """
+        if self.__logger:
+            self.__logger.debug(f'nodes_get_details() start: {locals()}')
+        retval = { }
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v2/nodes/list'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        data = { 'ids': node_ids }
+        params = { 'body' : json.dumps(data) }
+
+        res = self.call_post_form_data(url, params, {})
+
+        jres = json.loads(res)
+
+        if jres and jres.get('results', []):
+            nodes = jres.get('results', [])
+            for node in nodes:
+                if node and node.get('data', {}):
+                    node_data = node.get('data', {})
+                    if node_data and  node_data.get('properties', {}):
+                        node_id = node_data['properties'].get('id', -1)
+                        if node_id and node_id > 0:
+                            retval[node_id] = node_data
+
+        if self.__logger:
+            self.__logger.debug(f'nodes_get_details() finished: {retval}')
+
+        return retval
+
