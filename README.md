@@ -299,10 +299,10 @@ if __name__ == '__main__':
     res = csapi.smartdoctype_rule_documentexpiration_delete(f'{cshost}/otcs/cs.exe', ruleId)
 
     # add 'document generation' tab in rule
-    res = csapi.smartdoctype_rule_generatedocument_save(f'{cshost}/otcs/cs.exe', ruleId, True, 'add')
+    res = csapi.smartdoctype_rule_generatedocument_save(f'{cshost}/otcs/cs.exe', ruleId, True, False, 'add')
 
     # update 'document generation' tab in rule
-    res = csapi.smartdoctype_rule_generatedocument_save(f'{cshost}/otcs/cs.exe', ruleId, False, 'update')
+    res = csapi.smartdoctype_rule_generatedocument_save(f'{cshost}/otcs/cs.exe', ruleId, False, False, 'update')
 
     # delete 'document generation' tab in rule
     res = csapi.smartdoctype_rule_generatedocument_delete(f'{cshost}/otcs/cs.exe', ruleId)
@@ -319,11 +319,48 @@ if __name__ == '__main__':
     # add 'upload approval' tab in rule
     res = csapi.smartdoctype_rule_uploadapproval_save(f'{cshost}/otcs/cs.exe', ruleId, True, workflowMapId, [{'wfrole': 'Approver', 'member': 2001 }], 'add')
 
-    # update 'allow upload' tab in rule
+    # update 'upload approval tab in rule
     res = csapi.smartdoctype_rule_uploadapproval_save(f'{cshost}/otcs/cs.exe', ruleId, True, workflowMapId, [{'wfrole': 'Approver', 'member': 120593 }], 'update')
 
-    # delete 'allow upload' tab in rule
+    # delete 'upload approval' tab in rule
     res = csapi.smartdoctype_rule_uploadapproval_delete(f'{cshost}/otcs/cs.exe', ruleId)
+
+    # add 'reminder' tab in rule
+    # be sure that user/oauth client has enough permissions: otherwise you will get an exception: check volume Reminders:Successfactors Client or Standard Client - Failed to add Bot "reminder" on template.
+    res = csapi.smartdoctype_rule_reminder_save(f'{cshost}/otcs/cs.exe', 11, True, 'add')
+
+    # update 'reminder' tab in rule
+    res = csapi.smartdoctype_rule_reminder_save(f'{cshost}/otcs/cs.exe', 11, True, 'update')
+
+    # delete 'reminder' tab in rule
+    res = csapi.smartdoctype_rule_reminder_delete(f'{cshost}/otcs/cs.exe', ruleId)
+
+    # add 'review upload' tab in rule
+    res = csapi.smartdoctype_rule_reviewuploads_save(f'{cshost}/otcs/cs.exe', 11, True, 'Test Review', [2001], 'add')
+
+    # update 'review upload' tab in rule
+    res = csapi.smartdoctype_rule_reviewuploads_save(f'{cshost}/otcs/cs.exe', 11, False, 'Test Review', [2001], 'update')
+
+    # delete 'review upload' tab in rule
+    res = csapi.smartdoctype_rule_reviewuploads_delete(f'{cshost}/otcs/cs.exe', ruleId)
+
+    # add 'allow delete' tab in rule
+    res = csapi.smartdoctype_rule_allowdelete_save(f'{cshost}/otcs/cs.exe', 11, [2001], 'add')
+
+    # update 'allow delete' tab in rule
+    res = csapi.smartdoctype_rule_allowdelete_save(f'{cshost}/otcs/cs.exe', 11, [2001,120593], 'update')
+
+    # delete 'allow delete' tab in rule
+    res = csapi.smartdoctype_rule_allowdelete_delete(f'{cshost}/otcs/cs.exe', 11)
+
+    # add 'delete approval' tab in rule
+    res = csapi.smartdoctype_rule_deletewithapproval_save(f'{cshost}/otcs/cs.exe', ruleId, True, workflowMapId, [{'wfrole': 'Approver', 'member': 2001 }], 'add')
+
+    # update 'delete approval' tab in rule
+    res = csapi.smartdoctype_rule_deletewithapproval_save(f'{cshost}/otcs/cs.exe', ruleId, True, workflowMapId, [{'wfrole': 'Approver', 'member': 120593 }], 'update')
+
+    # delete 'delete approval' tab in rule
+    res = csapi.smartdoctype_rule_deletewithapproval_delete(f'{cshost}/otcs/cs.exe', ruleId)
 ```
 
 ## Business Workspace Functions

@@ -1030,8 +1030,8 @@ class CSRestAPI:
 
         return retval
 
-    def node_delete(self, base_url_cs: str, node_id: int):
-        """ Create a Node.
+    def node_delete(self, base_url_cs: str, node_id: int) -> dict:
+        """ Delete a Node.
 
         Args:
             base_url_cs (str):
@@ -1041,7 +1041,7 @@ class CSRestAPI:
                 The node id to be deleted.
 
         Returns:
-            int: the new node id of the uploaded document
+            dict: the result of the deleted node
 
         """
         if self.__logger:
@@ -1334,7 +1334,7 @@ class CSRestAPI:
             node_id (int):
                 The node id to which the category is applied.
 
-            category (str):
+            category (dict):
                 The category values. I.e. {"category_id":9830} (apply category and use default values) or {"category_id":9830,"9830_2":"new value"} (apply category and set a value) or {"category_id":9830,"9830_3_2_4":["","","new value"]} (apply category and set values in a set of a text field)
 
         Returns:
@@ -1503,7 +1503,7 @@ class CSRestAPI:
                 The List of classifications to be added to the node. I.e. [120571,120570]
 
         Returns:
-            list: list of classifications
+            int: the node id of the changed node
 
         """
         if self.__logger:
@@ -1524,6 +1524,49 @@ class CSRestAPI:
 
         if self.__logger:
             self.__logger.debug(f'node_classifications_apply() finished: {retval}')
+
+        return retval
+
+    def nodes_get_details(self, base_url_cs: str, node_ids: list) -> dict:
+        """ Get Details of serveral Nodes. Maximum of 250 Node IDs supported.
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            node_ids (list):
+                The List of Nodes to get the details
+
+        Returns:
+            dict: node information with structure: { '<nodeid1>': {}, '<nodeid2>': {}}
+
+        """
+        if self.__logger:
+            self.__logger.debug(f'nodes_get_details() start: {locals()}')
+        retval = { }
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v2/nodes/list'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        data = { 'ids': node_ids }
+        params = { 'body' : json.dumps(data) }
+
+        res = self.call_post_form_data(url, params, {})
+
+        jres = json.loads(res)
+
+        if jres and jres.get('results', []):
+            nodes = jres.get('results', [])
+            for node in nodes:
+                if node and node.get('data', {}):
+                    node_data = node.get('data', {})
+                    if node_data and  node_data.get('properties', {}):
+                        node_id = node_data['properties'].get('id', -1)
+                        if node_id and node_id > 0:
+                            retval[node_id] = node_data
+
+        if self.__logger:
+            self.__logger.debug(f'nodes_get_details() finished: {retval}')
 
         return retval
 
@@ -1696,7 +1739,7 @@ class CSRestAPI:
         return retval
 
     def category_definition_get(self, base_url_cs: str, node_id: int) -> dict:
-        """ Get Classifications of Node.
+        """ Get Category Definition of a Category.
 
         Args:
             base_url_cs (str):
@@ -1706,7 +1749,7 @@ class CSRestAPI:
                 The Node ID to get the information
 
         Returns:
-            dict: categories of node with structure: { 'properties': {'id', 'name', 'type', 'type_name'}, 'forms': []}
+            dict: category definition of category with structure: { 'properties': {'id', 'name', 'type', 'type_name'}, 'forms': []}
 
         """
         if self.__logger:
@@ -1814,14 +1857,14 @@ class CSRestAPI:
                 for prop in f['fields']['properties']:
                     if f['fields']['properties'][prop].get('title'):
                         field_id = f'{prop}'
-                        field_name = f['fields']['properties'][prop].get('title')
+                        field_name = ['fields']['properties'][prop].get('title')
                         retval['map_names'][field_name] = field_id
                         retval['map_ids'][field_id] = field_name
                         if f['fields']['properties'][prop].get('items') and f['fields']['properties'][prop].get('items', {}).get('properties'):
                             for subprop in f['fields']['properties'][prop]['items']['properties']:
                                 if f['fields']['properties'][prop]['items']['properties'][subprop].get('title'):
                                     sub_field_id = f'{subprop}'
-                                    sub_field_name = f['fields']['properties'][prop]['items']['properties'][subprop].get('title')
+                                    sub_field_name = ['fields']['properties'][prop]['items']['properties'][subprop].get('title')
                                     retval['map_names'][f'{field_name}:{sub_field_name}'] = sub_field_id
                                     retval['map_ids'][sub_field_id] = f'{field_name}:{sub_field_name}'
 
@@ -1952,7 +1995,7 @@ class CSRestAPI:
         """
         if self.__logger:
             self.__logger.debug(f'member_get() start: {locals()}')
-        retval = []
+        retval = {}
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v1/members/{group_id}'
         url = urllib.parse.urljoin(base_url, apiendpoint)
@@ -2214,7 +2257,7 @@ class CSRestAPI:
         return retval
 
     def smartdoctype_workspacetemplate_add(self, base_url_cs: str, smartdoctype_id: int, classification_id: int, workspacetemplate_id: int) -> dict:
-        """ Add a new Smart Document Type
+        """ Add Workspace Template to a new Smart Document Type
 
         Args:
             base_url_cs (str):
@@ -2279,7 +2322,7 @@ class CSRestAPI:
         apiendpoint = f'api/v2/smartdocumenttypes/rules/{rule_id}/bots/context'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
-        data = {'location': location_id, 'based_on_category': str(based_on_category_id), 'rule_expression': {'expressionText': '', 'expressionData': [], 'expressionDataKey': ''}, 'bot_action': 'update'}
+        data = {'location': location_id, 'based_on_category': str(based_on_category_id), 'rule_expression': {'expressionText': '', 'expressionData': [], 'expressionDataKey': ''}, 'mimetype': [''], 'bot_action': 'update'}
         params = {'body': json.dumps(data)}
 
         res = self.call_put(url, params)
@@ -2448,7 +2491,7 @@ class CSRestAPI:
 
         return retval
 
-    def smartdoctype_rule_generatedocument_save(self, base_url_cs: str, rule_id: int, is_doc_gen: bool, bot_action: str) -> dict:
+    def smartdoctype_rule_generatedocument_save(self, base_url_cs: str, rule_id: int, is_doc_gen: bool, only_gen_docs_allowed: bool, bot_action: str) -> dict:
         """ Add/update the Generate Document tab for a Smart Document Type Rule
 
         Args:
@@ -2460,6 +2503,9 @@ class CSRestAPI:
 
             is_doc_gen (bool):
                 The document generation flag to be set.
+
+            only_gen_docs_allowed (bool:
+                Allow only Generated Documents for Upload.
 
             bot_action (str):
                 The action: use 'add' to create the tab or 'update' to update the values.
@@ -2475,7 +2521,7 @@ class CSRestAPI:
         apiendpoint = f'api/v2/smartdocumenttypes/rules/{rule_id}/bots/createdocument'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
-        data = {'docgen': is_doc_gen, 'bot_action': bot_action}
+        data = {'docgen': is_doc_gen, 'docgen_upload_only': only_gen_docs_allowed, 'bot_action': bot_action}
         params = {'body': json.dumps(data)}
 
         res = self.call_put(url, params)
@@ -2703,6 +2749,349 @@ class CSRestAPI:
 
         return retval
 
+    def smartdoctype_rule_reminder_save(self, base_url_cs: str, rule_id: int, is_reminder: bool, bot_action: str) -> dict:
+        """ Add/update the Reminder tab for a Smart Document Type Rule
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            rule_id (int):
+                The Rule ID to update.
+
+            is_reminder (bool):
+                The document generation flag to be set.
+
+            bot_action (str):
+                The action: use 'add' to create the tab or 'update' to update the values.
+
+        Returns:
+            dict: the result of the action. I.e. {'ok': True, 'statusCode': 200}
+
+        """
+        if self.__logger:
+            self.__logger.debug(f'smartdoctype_rule_reminder_save() start: {locals()}')
+        retval = {}
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v2/smartdocumenttypes/rules/{rule_id}/bots/reminder'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        data = {'rstype': is_reminder, 'bot_action': bot_action}
+        params = {'body': json.dumps(data)}
+
+        res = self.call_put(url, params)
+
+        if res:
+            jres = json.loads(res)
+            retval = jres.get('results', {})
+        else:
+            raise Exception('Missing Permissions to execute this action - check volume Reminders:Successfactors Client - Failed to add Bot "reminder" on template.')
+
+        if self.__logger:
+            self.__logger.debug(f'smartdoctype_rule_reminder_save() finished: {retval}')
+
+        return retval
+
+    def smartdoctype_rule_reminder_delete(self, base_url_cs: str, rule_id: int) -> dict:
+        """ Delete the Reminder tab from a Smart Document Type Rule
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            rule_id (int):
+                The Rule ID to update.
+
+        Returns:
+            dict: the result of the action. I.e. {'ok': True, 'statusCode': 200}
+
+        """
+        if self.__logger:
+            self.__logger.debug(f'smartdoctype_rule_reminder_delete() start: {locals()}')
+        retval = {}
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v2/smartdocumenttypes/rules/{rule_id}/bots/reminder'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        res = self.call_delete(url)
+
+        jres = json.loads(res)
+
+        retval = jres.get('results', {})
+
+        if self.__logger:
+            self.__logger.debug(f'smartdoctype_rule_reminder_delete() finished: {retval}')
+
+        return retval
+
+    def smartdoctype_rule_reviewuploads_save(self, base_url_cs: str, rule_id: int, review_required: bool, review_text: str, members: list, bot_action: str) -> dict:
+        """ Add/update the Review Upload tab for a Smart Document Type Rule
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            rule_id (int):
+                The Rule ID to update.
+
+            review_required (bool):
+                The review required flag to be set.
+
+            review_text (str):
+                Set the review text.
+
+            members (list):
+                The list of groups to be set.
+
+            bot_action (str):
+                The action: use 'add' to create the tab or 'update' to update the values.
+
+        Returns:
+            dict: the result of the action. I.e. {'ok': True, 'statusCode': 200}
+
+        """
+        if self.__logger:
+            self.__logger.debug(f'smartdoctype_rule_reviewuploads_save() start: {locals()}')
+        retval = {}
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v2/smartdocumenttypes/rules/{rule_id}/bots/reviewoption'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        members_data = []
+        for grp in members:
+            grp_details = self.member_get(base_url_cs, grp)
+            memb = grp_details.copy()
+            memb['data'] = {}
+            memb['data']['properties'] = grp_details.copy()
+            members_data.append(memb)
+
+        data = {'review_required': review_required, 'reviewtext': review_text, 'member': members, 'bot_action': bot_action, 'membersData': members_data}
+        params = {'body': json.dumps(data)}
+
+        res = self.call_put(url, params)
+
+        jres = json.loads(res)
+
+        retval = jres.get('results', {})
+
+        if self.__logger:
+            self.__logger.debug(f'smartdoctype_rule_reviewuploads_save() finished: {retval}')
+
+        return retval
+
+    def smartdoctype_rule_reviewuploads_delete(self, base_url_cs: str, rule_id: int) -> dict:
+        """ Delete the Review Upload tab from a Smart Document Type Rule
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            rule_id (int):
+                The Rule ID to update.
+
+        Returns:
+            dict: the result of the action. I.e. {'ok': True, 'statusCode': 200}
+
+        """
+        if self.__logger:
+            self.__logger.debug(f'smartdoctype_rule_reviewuploads_delete() start: {locals()}')
+        retval = {}
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v2/smartdocumenttypes/rules/{rule_id}/bots/reviewoption'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        res = self.call_delete(url)
+
+        jres = json.loads(res)
+
+        retval = jres.get('results', {})
+
+        if self.__logger:
+            self.__logger.debug(f'smartdoctype_rule_reviewuploads_delete() finished: {retval}')
+
+        return retval
+
+    def smartdoctype_rule_allowdelete_save(self, base_url_cs: str, rule_id: int, members: list, bot_action: str) -> dict:
+        """ Add/update the Allow Delete tab for a Smart Document Type Rule
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            rule_id (int):
+                The Rule ID to update.
+
+            members (list):
+                The list of groups to be set.
+
+            bot_action (str):
+                The action: use 'add' to create the tab or 'update' to update the values.
+
+        Returns:
+            dict: the result of the action. I.e. {'ok': True, 'statusCode': 200}
+
+        """
+        if self.__logger:
+            self.__logger.debug(f'smartdoctype_rule_allowdelete_save() start: {locals()}')
+        retval = {}
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v2/smartdocumenttypes/rules/{rule_id}/bots/deletecontrol'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        members_data = []
+        for grp in members:
+            grp_details = self.member_get(base_url_cs, grp)
+            memb = grp_details.copy()
+            memb['data'] = {}
+            memb['data']['properties'] = grp_details.copy()
+            members_data.append(memb)
+
+        data = {'member': members, 'bot_action': bot_action, 'membersData': members_data}
+        params = {'body': json.dumps(data)}
+
+        res = self.call_put(url, params)
+
+        jres = json.loads(res)
+
+        retval = jres.get('results', {})
+
+        if self.__logger:
+            self.__logger.debug(f'smartdoctype_rule_allowdelete_save() finished: {retval}')
+
+        return retval
+
+    def smartdoctype_rule_allowdelete_delete(self, base_url_cs: str, rule_id: int) -> dict:
+        """ Delete the Allow Delete tab from a Smart Document Type Rule
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            rule_id (int):
+                The Rule ID to update.
+
+        Returns:
+            dict: the result of the action. I.e. {'ok': True, 'statusCode': 200}
+
+        """
+        if self.__logger:
+            self.__logger.debug(f'smartdoctype_rule_allowdelete_delete() start: {locals()}')
+        retval = {}
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v2/smartdocumenttypes/rules/{rule_id}/bots/deletecontrol'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        res = self.call_delete(url)
+
+        jres = json.loads(res)
+
+        retval = jres.get('results', {})
+
+        if self.__logger:
+            self.__logger.debug(f'smartdoctype_rule_allowdelete_delete() finished: {retval}')
+
+        return retval
+
+    def smartdoctype_rule_deletewithapproval_save(self, base_url_cs: str, rule_id: int, review_required: bool, workflow_id: int, wf_roles: list, bot_action: str) -> dict:
+        """ Add/update the Delete with Approval tab for a Smart Document Type Rule. An additional Workflow Map is required with the Map > General > Role Implementation being set to Map Based.
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            rule_id (int):
+                The Rule ID to update.
+
+            review_required (bool):
+                The Review Required flag to be set.
+
+            workflow_id (int):
+                The Workflow ID of the Approval Flow.
+
+            wf_roles (list):
+                The list of workflow roles to be set. I.e. [{'wfrole': 'Approver', 'member': 2001 }]
+
+            bot_action (str):
+                The action: use 'add' to create the tab or 'update' to update the values.
+
+        Returns:
+            dict: the result of the action. I.e. {'ok': True, 'statusCode': 200}
+
+        """
+        if self.__logger:
+            self.__logger.debug(f'smartdoctype_rule_deletewithapproval_save() start: {locals()}')
+        retval = {}
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v2/smartdocumenttypes/rules/{rule_id}/bots/deletewithapproval'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        role_hash = {}
+        for role in wf_roles:
+            if role['wfrole'] not in role_hash:
+                role_hash[role['wfrole']] = []
+            role_hash[role['wfrole']].append(role['member'])
+
+        role_mappings = []
+        for role_key in role_hash:
+            role_map = { 'workflowRole': role_key, 'member': 0, 'membersData': [] }
+
+            for group_id in role_hash[role_key]:
+                # role_map['member'].append(group_id)
+                role_map['member'] = group_id
+                grp_details = self.member_get(base_url_cs, group_id)
+                memb = grp_details.copy()
+                memb['data'] = {}
+                memb['data']['properties'] = grp_details.copy()
+                role_map['membersData'].append(memb)
+
+            role_mappings.append(role_map)
+
+        data = {'review_required': review_required, 'review_workflow_location': workflow_id, 'role_mappings': role_mappings, 'bot_action': bot_action}
+        params = {'body': json.dumps(data)}
+
+        res = self.call_put(url, params)
+
+        jres = json.loads(res)
+
+        retval = jres.get('results', {})
+
+        if self.__logger:
+            self.__logger.debug(f'smartdoctype_rule_deletewithapproval_save() finished: {retval}')
+
+        return retval
+
+    def smartdoctype_rule_deletewithapproval_delete(self, base_url_cs: str, rule_id: int) -> dict:
+        """ Delete the Delete with Approval tab from a Smart Document Type Rule
+
+        Args:
+            base_url_cs (str):
+                The URL to be called. I.e. http://content-server/otcs/cs.exe
+
+            rule_id (int):
+                The Rule ID to update.
+
+        Returns:
+            dict: the result of the action. I.e. {'ok': True, 'statusCode': 200}
+
+        """
+        if self.__logger:
+            self.__logger.debug(f'smartdoctype_rule_deletewithapproval_delete() start: {locals()}')
+        retval = {}
+        base_url = self.__check_url(base_url_cs)
+        apiendpoint = f'api/v2/smartdocumenttypes/rules/{rule_id}/bots/deletewithapproval'
+        url = urllib.parse.urljoin(base_url, apiendpoint)
+
+        res = self.call_delete(url)
+
+        jres = json.loads(res)
+
+        retval = jres.get('results', {})
+
+        if self.__logger:
+            self.__logger.debug(f'smartdoctype_rule_deletewithapproval_delete() finished: {retval}')
+
+        return retval
+
     def businessworkspace_search(self, base_url_cs: str, logical_system: str, bo_type: str, bo_id: str, page: int) -> dict:
         """ Search for a Business Workspace by Business Object Type and ID
 
@@ -2764,7 +3153,7 @@ class CSRestAPI:
                 The Node ID of the Business Workspace
 
         Returns:
-             list: available Smart Document Types of the requested Business Workspace: { 'results': [{'id', 'name', 'parent_id'}], 'page_total': 0 }
+             list: available Smart Document Types of the requested Business Workspace: [{ 'classification_id': 0, 'classification_name': '', 'classification_description': '', 'category_id': 0, 'location': '', 'document_generation': false, 'required': false, 'template_id': 0 }]
 
         """
         if self.__logger:
@@ -2805,7 +3194,7 @@ class CSRestAPI:
                 The Node ID of the Category which is applied. Get it from businessworkspace_smartdoctypes_get()
 
         Returns:
-             list: form fields of the category definition: { 'results': [{'id', 'name', 'parent_id'}], 'page_total': 0 }
+             list: form fields of the category definition: [ { data: { category_id: 6002, '6002_2': null }, options: { fields: {}}, form: {}} }, schema: { properties: {}}, type: 'object' } } ]
 
         """
         if self.__logger:
@@ -2830,7 +3219,7 @@ class CSRestAPI:
         return retval
 
     def businessworkspace_hr_upload_file_depricated(self, base_url_cs: str, logical_system: str, bo_type: str, bo_id: str, local_folder: str, local_filename: str, remote_filename: str, document_type: str, date_of_origin: datetime) -> int:
-        """ Upload Document into HR workspace from a Local File.
+        """ Upload Document into HR workspace from a Local File. Used in CS Version 24.2 and prior.
 
         Args:
             base_url_cs (str):
@@ -2888,7 +3277,7 @@ class CSRestAPI:
         return retval
 
     def businessworkspace_hr_upload_bytes_depricated(self, base_url_cs: str, logical_system: str, bo_type: str, bo_id: str, content_bytes: bytes, remote_filename: str, document_type: str, date_of_origin: datetime) -> int:
-        """ Upload Document into HR workspace as Byte Array.
+        """ Upload Document into HR workspace as Byte Array. Used in CS Version 24.2 and prior.
 
         Args:
             base_url_cs (str):
@@ -2943,7 +3332,7 @@ class CSRestAPI:
         return retval
 
     def businessworkspace_hr_upload_file(self, base_url_cs: str, bws_id: int, local_folder: str, local_filename: str, remote_filename: str, classification_id: int, category_id: int, category: dict) -> int:
-        """ Upload Document into HR workspace from a Local File.
+        """ Upload Document into HR workspace from a Local File. Used in CS Version 24.3 and later.
 
         Args:
             base_url_cs (str):
@@ -3047,7 +3436,7 @@ class CSRestAPI:
         return retval
 
     def businessworkspace_hr_upload_bytes(self, base_url_cs: str, bws_id: int, content_bytes: bytes, remote_filename: str, classification_id: int, category_id: int, category: dict) -> int:
-        """ Upload Document into HR workspace as Byte Array.
+        """ Upload Document into HR workspace as Byte Array. Used in CS Version 24.3 and later.
 
         Args:
             base_url_cs (str):
@@ -3597,7 +3986,7 @@ class CSRestAPI:
         return retval
 
     def webreport_nodeid_call(self, base_url_cs: str, node_id: int, params: dict) -> str:
-        """ Call WebReport by Nickname and pass Parameters by POST method (form-data)
+        """ Call WebReport by NodeID and pass Parameters by POST method (form-data)
 
         Args:
             base_url_cs (str):
@@ -3775,49 +4164,6 @@ class CSRestAPI:
 
         if self.__logger:
             self.__logger.debug(f'workflows_document_draft_initiate() finished: {retval}')
-
-        return retval
-
-    def nodes_get_details(self, base_url_cs: str, node_ids: list) -> dict:
-        """ Get Details of serveral Nodes. Maximum of 250 Node IDs supported.
-
-        Args:
-            base_url_cs (str):
-                The URL to be called. I.e. http://content-server/otcs/cs.exe
-
-            node_ids (list):
-                The List of Nodes to get the details
-
-        Returns:
-            dict: node information with structure: { '<nodeid1>': {}, '<nodeid2>': {}}
-
-        """
-        if self.__logger:
-            self.__logger.debug(f'nodes_get_details() start: {locals()}')
-        retval = { }
-        base_url = self.__check_url(base_url_cs)
-        apiendpoint = f'api/v2/nodes/list'
-        url = urllib.parse.urljoin(base_url, apiendpoint)
-
-        data = { 'ids': node_ids }
-        params = { 'body' : json.dumps(data) }
-
-        res = self.call_post_form_data(url, params, {})
-
-        jres = json.loads(res)
-
-        if jres and jres.get('results', []):
-            nodes = jres.get('results', [])
-            for node in nodes:
-                if node and node.get('data', {}):
-                    node_data = node.get('data', {})
-                    if node_data and  node_data.get('properties', {}):
-                        node_id = node_data['properties'].get('id', -1)
-                        if node_id and node_id > 0:
-                            retval[node_id] = node_data
-
-        if self.__logger:
-            self.__logger.debug(f'nodes_get_details() finished: {retval}')
 
         return retval
 
