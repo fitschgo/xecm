@@ -20,6 +20,7 @@ class LoginType(enum.Enum):
     OTCS_TICKET = enum.auto()
     OTDS_TICKET = enum.auto()
     OTDS_BEARER = enum.auto()
+    APIM_OTCS_TICKET = enum.auto()
 
 class CSRestAPI:
     """ Do Login and get OTCSTicket, OTDSTicket or Bearer Token """
@@ -29,6 +30,13 @@ class CSRestAPI:
     __ticket = ''
     __usr = ''
     __pwd = ''
+    __apim_enabled = False
+    __apim_login_url = ''
+    __apim_grant_type = ''
+    __apim_client_id = ''
+    __apim_client_secret = ''
+    __apim_scope = ''
+    __apim_bearer_token = ''
     __verify_ssl = True
     __login_type: LoginType
     __volumes_hash = {}
@@ -41,7 +49,12 @@ class CSRestAPI:
         user_or_client_id: str,
         pw_or_client_secret: str,
         verify_ssl: bool,
-        logger: logging.Logger
+        logger: logging.Logger,
+        apim_login_url: str,
+        apim_grant_type: str,
+        apim_client_id: str,
+        apim_client_secret: str,
+        apim_scope: str
     ) -> None:
         """Initialize the XECMLogin class.
 
@@ -54,8 +67,20 @@ class CSRestAPI:
                 The username of the user or client ID of the oAuth2 client (depending on the login_type).
             pw_or_client_secret (str):
                 The password of the user or client secret of the oAuth2 client (depending on the login_type).
+            verify_ssl (bool):
+                Should the SSL Certificate be verified
             logger (logging.Logger, optional - set to None if not needed):
                 The logging object to use for all log messages.
+            apim_login_url (str):
+                The Azure Login URL i.e. https://login.microsoftonline.com/<uid>/v2.0/token
+            apim_grant_type (str):
+                The grant_type used - i.e. client_credentials.
+            apim_client_id (str):
+                The client_id - corresponds to a uid
+            apim_client_secret (str):
+                The client_secret
+            apim_scope (str):
+                The scope - i.e. api://<uid>/.default
 
         """
         try:
@@ -87,12 +112,36 @@ class CSRestAPI:
                 self.__ticket = self.__otds_login(self.__usr, self.__pwd)
                 if self.__logger:
                     self.__logger.info(f'OTDSTicket created.')
-            else:
+            elif self.__login_type == LoginType.OTDS_BEARER:
                 if self.__logger:
                     self.__logger.info(f'Create Bearer Token in OTDS with client_id and client_secret.')
                 self.__ticket = self.__otds_token(self.__usr, self.__pwd)
                 if self.__logger:
                     self.__logger.info(f'Bearer Token created.')
+            elif self.__login_type == LoginType.APIM_OTCS_TICKET:
+                # check additional parameters
+                if apim_login_url and apim_grant_type and apim_client_id and apim_client_secret and apim_scope:
+                    self.__apim_enabled = True
+                    self.__apim_login_url = apim_login_url
+                    self.__apim_grant_type = apim_grant_type
+                    self.__apim_client_id = apim_client_id
+                    self.__apim_client_secret = apim_client_secret
+                    self.__apim_scope = apim_scope
+                else:
+                    raise Exception('Please provide all apim_* parameters')
+
+                if self.__logger:
+                    self.__logger.info(f'Create Azure APIM Token client_id and client_secret.')
+
+                self.__apim_bearer_token = self.__apim_token(self.__apim_client_id, self.__apim_client_secret)
+
+                if self.__logger:
+                    self.__logger.info(f'Create OTCSTicket with username and password.')
+                self.__ticket = self.__otcs_login(self.__usr, self.__pwd)
+                if self.__logger:
+                    self.__logger.info(f'OTCSTicket created.')
+            else:
+                raise Exception('LoginType not supported.')
 
         except Exception as innerErr:
             error_message = f'XECMLogin Error during init: {innerErr}.'
@@ -125,9 +174,10 @@ class CSRestAPI:
         params = { 'username': username, 'password': password }
 
         # do REST API call to CS
-        r = requests.post(url=url, data=params,
-                          headers={'User-Agent': self.__useragent,
-                                   'Content-Type': 'application/x-www-form-urlencoded'}, verify=self.__verify_ssl)
+        req_headers = {'User-Agent': self.__useragent, 'Content-Type': 'application/x-www-form-urlencoded'}
+        if self.__apim_enabled:
+            req_headers['Authorization'] = f'Bearer {self.__apim_bearer_token}'
+        r = requests.post(url=url, data=params, headers=req_headers, verify=self.__verify_ssl)
 
         if self.__logger:
             self.__pretty_print_POST(r.request)
@@ -184,9 +234,10 @@ class CSRestAPI:
         params = { 'user_name': username, 'password': password }
 
         # do REST API call to CS
-        r = requests.post(url=url, data=json.dumps(params),
-                          headers={'User-Agent': self.__useragent,
-                                   'Content-Type': 'application/json;charset=utf-8'}, verify=self.__verify_ssl)
+        req_headers = {'User-Agent': self.__useragent, 'Content-Type': 'application/json;charset=utf-8'}
+        if self.__apim_enabled:
+            req_headers['Authorization'] = f'Bearer {self.__apim_bearer_token}'
+        r = requests.post(url=url, data=json.dumps(params), headers=req_headers, verify=self.__verify_ssl)
 
         if self.__logger:
             self.__pretty_print_POST(r.request)
@@ -243,9 +294,10 @@ class CSRestAPI:
         params = { 'grant_type': 'client_credentials', 'requested_token_type': 'urn:ietf:params:oauth:token-type:access_token' }
 
         # do REST API call to CS
-        r = requests.post(url=url, data=params,
-                          headers={'User-Agent': self.__useragent,
-                                   'Content-Type': 'application/x-www-form-urlencoded'}, auth=(client_id, client_secret), verify=self.__verify_ssl)
+        req_headers = {'User-Agent': self.__useragent, 'Content-Type': 'application/x-www-form-urlencoded'}
+        if self.__apim_enabled:
+            req_headers['Authorization'] = f'Bearer {self.__apim_bearer_token}'
+        r = requests.post(url=url, data=params, headers=req_headers, auth=(client_id, client_secret), verify=self.__verify_ssl)
 
         if self.__logger:
             self.__pretty_print_POST(r.request)
@@ -268,6 +320,63 @@ class CSRestAPI:
 
             if bearer_token == '':
                 error_message = f'Login Error on {url}: no OTDS Bearer Token created. Response was {r_text}'
+                if self.__logger:
+                    self.__logger.error(error_message)
+                raise Exception(error_message)
+
+        else:
+            error_message = f'Login Error on {url}: {r.status_code} {r.text}'
+            if self.__logger:
+                self.__logger.error(error_message)
+            raise Exception(error_message)
+
+        return bearer_token
+
+    def __apim_token(self, client_id: str, client_secret: str) -> str:
+        """Do login at OTDS and return the Bearer Token.
+
+        Args:
+            client_id (str):
+                The client id of the APIM Azure oAuth2 client.
+            client_secret (str):
+                The client secret of the APIM Azure oAuth2 client.
+
+        Returns:
+            str: Bearer Token
+
+        """
+
+        error_message = ''
+        bearer_token = ''
+        url = self.__apim_login_url
+
+        params = { 'grant_type': self.__apim_grant_type, 'client_id': client_id, 'client_secret': client_secret, 'scope': self.__apim_scope }
+
+        # do REST API call to CS
+        #r = requests.post(url=url, data=params, headers={'User-Agent': self.__useragent, 'Content-Type': 'application/x-www-form-urlencoded'}, auth=(client_id, client_secret), verify=self.__verify_ssl)
+        r = requests.post(url=url, data=params, headers={'User-Agent': self.__useragent, 'Content-Type': 'application/x-www-form-urlencoded'}, verify=self.__verify_ssl)
+
+        if self.__logger:
+            self.__pretty_print_POST(r.request)
+
+        if r.ok:
+            # get OTDSTicket from response
+            r_text = r.text
+
+            if self.__logger:
+                self.__logger.debug(f'-----------RESPONSE-----------\r\n{r_text}')
+
+            try:
+                resObj = json.loads(r_text)
+                bearer_token = resObj.get('access_token', '')
+            except Exception as innerErr:
+                error_message = f'Login Error Bearer Token on {url} on Result Parse: {innerErr}. Response was {r_text}'
+                if self.__logger:
+                    self.__logger.error(error_message)
+                raise Exception(error_message)
+
+            if bearer_token == '':
+                error_message = f'Login Error on {url}: no APIM Bearer Token created. Response was {r_text}'
                 if self.__logger:
                     self.__logger.error(error_message)
                 raise Exception(error_message)
@@ -353,7 +462,10 @@ class CSRestAPI:
         apiendpoint = f'api/v1/ping'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
-        r = requests.get(url=url, headers={'Content-Type': 'application/json', 'User-Agent': self.__useragent}, verify=self.__verify_ssl)
+        req_headers = {'User-Agent': self.__useragent, 'Content-Type': 'application/json'}
+        if self.__apim_enabled:
+            req_headers['Authorization'] = f'Bearer {self.__apim_bearer_token}'
+        r = requests.get(url=url, headers=req_headers, verify=self.__verify_ssl)
 
         if self.__logger:
             self.__pretty_print_GET(r.request)
@@ -398,19 +510,24 @@ class CSRestAPI:
         # do REST API call to CS
         auth_header = ''
         auth_ticket = ''
+        req_headers = {'User-Agent': self.__useragent, 'Content-Type': 'application/json'}
         if self.__login_type == LoginType.OTCS_TICKET:
             auth_header = 'OTCSTicket'
             auth_ticket = self.__ticket
+            if self.__apim_enabled:
+                req_headers['Authorization'] = f'Bearer {self.__apim_bearer_token}'
         elif self.__login_type == LoginType.OTDS_TICKET:
             auth_header = 'OTDSTicket'
             auth_ticket = self.__ticket
+            if self.__apim_enabled:
+                req_headers['Authorization'] = f'Bearer {self.__apim_bearer_token}'
         else:
             auth_header = 'Authorization'
             auth_ticket = f'Bearer {self.__ticket}'
 
-        r = requests.get(url=api_url,
-                         headers={'Content-Type': 'application/json', auth_header: auth_ticket,
-                                  'User-Agent': self.__useragent}, params=params, verify=self.__verify_ssl)
+        req_headers[auth_header] = auth_ticket
+
+        r = requests.get(url=api_url, headers=req_headers, params=params, verify=self.__verify_ssl)
 
         if self.__logger:
             self.__pretty_print_GET(r.request)
@@ -461,17 +578,24 @@ class CSRestAPI:
         # do REST API call to CS
         auth_header = ''
         auth_ticket = ''
+        req_headers = {'User-Agent': self.__useragent, 'Content-Type': 'application/x-www-form-urlencoded'}
         if self.__login_type == LoginType.OTCS_TICKET:
             auth_header = 'OTCSTicket'
             auth_ticket = self.__ticket
+            if self.__apim_enabled:
+                req_headers['Authorization'] = f'Bearer {self.__apim_bearer_token}'
         elif self.__login_type == LoginType.OTDS_TICKET:
             auth_header = 'OTDSTicket'
             auth_ticket = self.__ticket
+            if self.__apim_enabled:
+                req_headers['Authorization'] = f'Bearer {self.__apim_bearer_token}'
         else:
             auth_header = 'Authorization'
             auth_ticket = f'Bearer {self.__ticket}'
 
-        r = requests.post(url=api_url, headers={'Content-Type': 'application/x-www-form-urlencoded', auth_header: auth_ticket, 'User-Agent': self.__useragent}, data=params, verify=self.__verify_ssl)
+        req_headers[auth_header] = auth_ticket
+
+        r = requests.post(url=api_url, headers=req_headers, data=params, verify=self.__verify_ssl)
 
         if self.__logger:
             self.__pretty_print_POST(r.request)
@@ -525,17 +649,24 @@ class CSRestAPI:
         # do REST API call to CS
         auth_header = ''
         auth_ticket = ''
+        req_headers = {'User-Agent': self.__useragent}
         if self.__login_type == LoginType.OTCS_TICKET:
             auth_header = 'OTCSTicket'
             auth_ticket = self.__ticket
+            if self.__apim_enabled:
+                req_headers['Authorization'] = f'Bearer {self.__apim_bearer_token}'
         elif self.__login_type == LoginType.OTDS_TICKET:
             auth_header = 'OTDSTicket'
             auth_ticket = self.__ticket
+            if self.__apim_enabled:
+                req_headers['Authorization'] = f'Bearer {self.__apim_bearer_token}'
         else:
             auth_header = 'Authorization'
             auth_ticket = f'Bearer {self.__ticket}'
 
-        r = requests.post(url=api_url, headers={auth_header: auth_ticket, 'User-Agent': self.__useragent}, data=params, files=files, verify=self.__verify_ssl)
+        req_headers[auth_header] = auth_ticket
+
+        r = requests.post(url=api_url, headers=req_headers, data=params, files=files, verify=self.__verify_ssl)
 
         if self.__logger:
             self.__pretty_print_POST(r.request)
@@ -586,17 +717,24 @@ class CSRestAPI:
         # do REST API call to CS
         auth_header = ''
         auth_ticket = ''
+        req_headers = {'User-Agent': self.__useragent}
         if self.__login_type == LoginType.OTCS_TICKET:
             auth_header = 'OTCSTicket'
             auth_ticket = self.__ticket
+            if self.__apim_enabled:
+                req_headers['Authorization'] = f'Bearer {self.__apim_bearer_token}'
         elif self.__login_type == LoginType.OTDS_TICKET:
             auth_header = 'OTDSTicket'
             auth_ticket = self.__ticket
+            if self.__apim_enabled:
+                req_headers['Authorization'] = f'Bearer {self.__apim_bearer_token}'
         else:
             auth_header = 'Authorization'
             auth_ticket = f'Bearer {self.__ticket}'
 
-        r = requests.put(url=api_url, headers={auth_header: auth_ticket, 'User-Agent': self.__useragent}, data=params, verify=self.__verify_ssl)
+        req_headers[auth_header] = auth_ticket
+
+        r = requests.put(url=api_url, headers=req_headers, data=params, verify=self.__verify_ssl)
 
         if self.__logger:
             self.__pretty_print_POST(r.request)
@@ -644,17 +782,24 @@ class CSRestAPI:
         # do REST API call to CS
         auth_header = ''
         auth_ticket = ''
+        req_headers = {'User-Agent': self.__useragent, 'Content-Type': 'application/json'}
         if self.__login_type == LoginType.OTCS_TICKET:
             auth_header = 'OTCSTicket'
             auth_ticket = self.__ticket
+            if self.__apim_enabled:
+                req_headers['Authorization'] = f'Bearer {self.__apim_bearer_token}'
         elif self.__login_type == LoginType.OTDS_TICKET:
             auth_header = 'OTDSTicket'
             auth_ticket = self.__ticket
+            if self.__apim_enabled:
+                req_headers['Authorization'] = f'Bearer {self.__apim_bearer_token}'
         else:
             auth_header = 'Authorization'
             auth_ticket = f'Bearer {self.__ticket}'
 
-        r = requests.delete(url=api_url, headers={'Content-Type': 'application/json', auth_header: auth_ticket, 'User-Agent': self.__useragent}, verify=self.__verify_ssl)
+        req_headers[auth_header] = auth_ticket
+
+        r = requests.delete(url=api_url, headers=req_headers, verify=self.__verify_ssl)
 
         if self.__logger:
             self.__pretty_print_GET(r.request)
@@ -1098,19 +1243,26 @@ class CSRestAPI:
 
         auth_header = ''
         auth_ticket = ''
+        req_headers = {'User-Agent': self.__useragent, 'Content-Type': 'application/json'}
         if self.__login_type == LoginType.OTCS_TICKET:
             auth_header = 'OTCSTicket'
             auth_ticket = self.__ticket
+            if self.__apim_enabled:
+                req_headers['Authorization'] = f'Bearer {self.__apim_bearer_token}'
         elif self.__login_type == LoginType.OTDS_TICKET:
             auth_header = 'OTDSTicket'
             auth_ticket = self.__ticket
+            if self.__apim_enabled:
+                req_headers['Authorization'] = f'Bearer {self.__apim_bearer_token}'
         else:
             auth_header = 'Authorization'
             auth_ticket = f'Bearer {self.__ticket}'
 
+        req_headers[auth_header] = auth_ticket
+
         # download content into local file
         try:
-            with requests.get(url=url, headers={'Content-Type': 'application/json', auth_header: auth_ticket, 'User-Agent': self.__useragent}, stream=True, verify=self.__verify_ssl) as r:
+            with requests.get(url=url, headers=req_headers, stream=True, verify=self.__verify_ssl) as r:
                 r.raise_for_status()
                 file_size = 0
                 if self.__logger:
@@ -1175,19 +1327,26 @@ class CSRestAPI:
 
         auth_header = ''
         auth_ticket = ''
+        req_headers = {'User-Agent': self.__useragent, 'Content-Type': 'application/json'}
         if self.__login_type == LoginType.OTCS_TICKET:
             auth_header = 'OTCSTicket'
             auth_ticket = self.__ticket
+            if self.__apim_enabled:
+                req_headers['Authorization'] = f'Bearer {self.__apim_bearer_token}'
         elif self.__login_type == LoginType.OTDS_TICKET:
             auth_header = 'OTDSTicket'
             auth_ticket = self.__ticket
+            if self.__apim_enabled:
+                req_headers['Authorization'] = f'Bearer {self.__apim_bearer_token}'
         else:
             auth_header = 'Authorization'
             auth_ticket = f'Bearer {self.__ticket}'
 
+        req_headers[auth_header] = auth_ticket
+
         # download content into local file
         try:
-            with requests.get(url=url, headers={'Content-Type': 'application/json', auth_header: auth_ticket, 'User-Agent': self.__useragent}, stream=True, verify=self.__verify_ssl) as r:
+            with requests.get(url=url, headers=req_headers, stream=True, verify=self.__verify_ssl) as r:
                 r.raise_for_status()
                 file_size = 0
                 if self.__logger:
