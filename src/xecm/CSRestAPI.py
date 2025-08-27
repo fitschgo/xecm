@@ -50,11 +50,11 @@ class CSRestAPI:
         pw_or_client_secret: str,
         verify_ssl: bool,
         logger: logging.Logger,
-        apim_login_url: str,
-        apim_grant_type: str,
-        apim_client_id: str,
-        apim_client_secret: str,
-        apim_scope: str
+        apim_login_url='',
+        apim_grant_type='',
+        apim_client_id='',
+        apim_client_secret='',
+        apim_scope=''
     ) -> None:
         """Initialize the XECMLogin class.
 
@@ -169,6 +169,8 @@ class CSRestAPI:
         error_message = ''
         otcsticket = ''
         apiendpoint = 'api/v1/auth'
+        if self.__apim_enabled:
+            apiendpoint = 'v1/auth'
         url = urllib.parse.urljoin(self.__base_url, apiendpoint)
 
         params = { 'username': username, 'password': password }
@@ -229,6 +231,9 @@ class CSRestAPI:
         error_message = ''
         otdsticket = ''
         apiendpoint = 'otdsws/v1/authentication/credentials'
+        if self.__apim_enabled:
+            apiendpoint = 'v1/authentication/credentials'
+
         url = urllib.parse.urljoin(self.__base_url, apiendpoint)
 
         params = { 'user_name': username, 'password': password }
@@ -458,6 +463,8 @@ class CSRestAPI:
         # do REST API call to CS
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v1/ping'
+        if self.__apim_enabled:
+            apiendpoint = 'v1/ping'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         req_headers = {'User-Agent': self.__useragent, 'Content-Type': 'application/json'}
@@ -519,9 +526,16 @@ class CSRestAPI:
             auth_ticket = self.__ticket
             if self.__apim_enabled:
                 req_headers['Authorization'] = f'Bearer {self.__apim_bearer_token}'
-        else:
+        elif self.__login_type == LoginType.OTDS_BEARER:
             auth_header = 'Authorization'
             auth_ticket = f'Bearer {self.__ticket}'
+        elif self.__login_type == LoginType.APIM_OTCS_TICKET:
+            auth_header = 'OTCSTicket'
+            auth_ticket = self.__ticket
+            if self.__apim_enabled:
+                req_headers['Authorization'] = f'Bearer {self.__apim_bearer_token}'
+        else:
+            raise Exception('LoginType not supported.')
 
         req_headers[auth_header] = auth_ticket
 
@@ -587,9 +601,16 @@ class CSRestAPI:
             auth_ticket = self.__ticket
             if self.__apim_enabled:
                 req_headers['Authorization'] = f'Bearer {self.__apim_bearer_token}'
-        else:
+        elif self.__login_type == LoginType.OTDS_BEARER:
             auth_header = 'Authorization'
             auth_ticket = f'Bearer {self.__ticket}'
+        elif self.__login_type == LoginType.APIM_OTCS_TICKET:
+            auth_header = 'OTCSTicket'
+            auth_ticket = self.__ticket
+            if self.__apim_enabled:
+                req_headers['Authorization'] = f'Bearer {self.__apim_bearer_token}'
+        else:
+            raise Exception('LoginType not supported.')
 
         req_headers[auth_header] = auth_ticket
 
@@ -658,9 +679,16 @@ class CSRestAPI:
             auth_ticket = self.__ticket
             if self.__apim_enabled:
                 req_headers['Authorization'] = f'Bearer {self.__apim_bearer_token}'
-        else:
+        elif self.__login_type == LoginType.OTDS_BEARER:
             auth_header = 'Authorization'
             auth_ticket = f'Bearer {self.__ticket}'
+        elif self.__login_type == LoginType.APIM_OTCS_TICKET:
+            auth_header = 'OTCSTicket'
+            auth_ticket = self.__ticket
+            if self.__apim_enabled:
+                req_headers['Authorization'] = f'Bearer {self.__apim_bearer_token}'
+        else:
+            raise Exception('LoginType not supported.')
 
         req_headers[auth_header] = auth_ticket
 
@@ -726,9 +754,16 @@ class CSRestAPI:
             auth_ticket = self.__ticket
             if self.__apim_enabled:
                 req_headers['Authorization'] = f'Bearer {self.__apim_bearer_token}'
-        else:
+        elif self.__login_type == LoginType.OTDS_BEARER:
             auth_header = 'Authorization'
             auth_ticket = f'Bearer {self.__ticket}'
+        elif self.__login_type == LoginType.APIM_OTCS_TICKET:
+            auth_header = 'OTCSTicket'
+            auth_ticket = self.__ticket
+            if self.__apim_enabled:
+                req_headers['Authorization'] = f'Bearer {self.__apim_bearer_token}'
+        else:
+            raise Exception('LoginType not supported.')
 
         req_headers[auth_header] = auth_ticket
 
@@ -791,9 +826,16 @@ class CSRestAPI:
             auth_ticket = self.__ticket
             if self.__apim_enabled:
                 req_headers['Authorization'] = f'Bearer {self.__apim_bearer_token}'
-        else:
+        elif self.__login_type == LoginType.OTDS_BEARER:
             auth_header = 'Authorization'
             auth_ticket = f'Bearer {self.__ticket}'
+        elif self.__login_type == LoginType.APIM_OTCS_TICKET:
+            auth_header = 'OTCSTicket'
+            auth_ticket = self.__ticket
+            if self.__apim_enabled:
+                req_headers['Authorization'] = f'Bearer {self.__apim_bearer_token}'
+        else:
+            raise Exception('LoginType not supported.')
 
         req_headers[auth_header] = auth_ticket
 
@@ -844,6 +886,8 @@ class CSRestAPI:
         retval = {}
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v1/serverinfo'
+        if self.__apim_enabled:
+            apiendpoint = 'v1/serverinfo'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         params = {}
@@ -888,6 +932,8 @@ class CSRestAPI:
         retval = { 'properties': {}, 'categories': [], 'permissions': { 'owner': {}, 'group': {}, 'public': {}, 'custom': [] }, 'classifications': []}
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/nodes/{node_id}'
+        if self.__apim_enabled:
+            apiendpoint = f'v2/nodes/{node_id}'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         params = {}
@@ -986,6 +1032,8 @@ class CSRestAPI:
         retval = -1
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/nodes'
+        if self.__apim_enabled:
+            apiendpoint = f'v2/nodes'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         data = {'type': type_id, 'parent_id': parent_id, 'name': node_name}
@@ -1047,6 +1095,8 @@ class CSRestAPI:
         retval = -1
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/nodes/{node_id}'
+        if self.__apim_enabled:
+            apiendpoint = f'v2/nodes/{node_id}'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         data = {}
@@ -1192,6 +1242,8 @@ class CSRestAPI:
         retval = {}
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/nodes/{node_id}'
+        if self.__apim_enabled:
+            apiendpoint = f'v2/nodes/{node_id}'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         res = self.call_delete(url)
@@ -1234,6 +1286,8 @@ class CSRestAPI:
         retval = { 'message': 'ok' }
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/nodes/{node_id}'
+        if self.__apim_enabled:
+            apiendpoint = f'v2/nodes/{node_id}'
         if node_version != '':
             apiendpoint += f'/versions/{node_version}'
         apiendpoint += '/content'
@@ -1252,9 +1306,16 @@ class CSRestAPI:
             auth_ticket = self.__ticket
             if self.__apim_enabled:
                 req_headers['Authorization'] = f'Bearer {self.__apim_bearer_token}'
-        else:
+        elif self.__login_type == LoginType.OTDS_BEARER:
             auth_header = 'Authorization'
             auth_ticket = f'Bearer {self.__ticket}'
+        elif self.__login_type == LoginType.APIM_OTCS_TICKET:
+            auth_header = 'OTCSTicket'
+            auth_ticket = self.__ticket
+            if self.__apim_enabled:
+                req_headers['Authorization'] = f'Bearer {self.__apim_bearer_token}'
+        else:
+            raise Exception('LoginType not supported.')
 
         req_headers[auth_header] = auth_ticket
 
@@ -1318,6 +1379,8 @@ class CSRestAPI:
         retval = { 'message': 'ok' }
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/nodes/{node_id}'
+        if self.__apim_enabled:
+            apiendpoint = f'v2/nodes/{node_id}'
         if node_version != '':
             apiendpoint += f'/versions/{node_version}'
         apiendpoint += '/content'
@@ -1336,9 +1399,16 @@ class CSRestAPI:
             auth_ticket = self.__ticket
             if self.__apim_enabled:
                 req_headers['Authorization'] = f'Bearer {self.__apim_bearer_token}'
-        else:
+        elif self.__login_type == LoginType.OTDS_BEARER:
             auth_header = 'Authorization'
             auth_ticket = f'Bearer {self.__ticket}'
+        elif self.__login_type == LoginType.APIM_OTCS_TICKET:
+            auth_header = 'OTCSTicket'
+            auth_ticket = self.__ticket
+            if self.__apim_enabled:
+                req_headers['Authorization'] = f'Bearer {self.__apim_bearer_token}'
+        else:
+            raise Exception('LoginType not supported.')
 
         req_headers[auth_header] = auth_ticket
 
@@ -1411,6 +1481,8 @@ class CSRestAPI:
         retval = -1
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/nodes'
+        if self.__apim_enabled:
+            apiendpoint = f'v2/nodes'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         data = { 'type': 144, 'parent_id': parent_id, 'name': remote_filename }
@@ -1460,6 +1532,8 @@ class CSRestAPI:
         retval = -1
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/nodes'
+        if self.__apim_enabled:
+            apiendpoint = f'v2/nodes'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         data = { 'type': 144, 'parent_id': parent_id, 'name': remote_filename }
@@ -1503,6 +1577,8 @@ class CSRestAPI:
         retval = -1
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/nodes/{node_id}/categories'
+        if self.__apim_enabled:
+            apiendpoint = f'v2/nodes/{node_id}/categories'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         params = {'body': json.dumps(category)}
@@ -1544,6 +1620,8 @@ class CSRestAPI:
         retval = -1
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/nodes/{node_id}/categories/{category_id}'
+        if self.__apim_enabled:
+            apiendpoint = f'v2/nodes/{node_id}/categories/{category_id}'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         params = {'body': json.dumps(category)}
@@ -1582,6 +1660,8 @@ class CSRestAPI:
         retval = -1
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/nodes/{node_id}/categories/{category_id}'
+        if self.__apim_enabled:
+            apiendpoint = f'v2/nodes/{node_id}/categories/{category_id}'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         res = self.call_delete(url)
@@ -1761,6 +1841,8 @@ class CSRestAPI:
         retval = { 'results': [], 'page_total': 0 }
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/nodes/{node_id}/nodes'
+        if self.__apim_enabled:
+            apiendpoint = f'v2/nodes/{node_id}/nodes'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         limit = 200
@@ -1869,6 +1951,8 @@ class CSRestAPI:
         retval = []
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/nodes/{node_id}/nodes'
+        if self.__apim_enabled:
+            apiendpoint = f'v2/nodes/{node_id}/nodes'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         params = { 'limit': 200, 'fields': ['properties{id,name}'], 'where_name': filter_name }
@@ -1914,6 +1998,8 @@ class CSRestAPI:
         retval = { 'properties': {}, 'forms': []}
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/nodes/{node_id}'
+        if self.__apim_enabled:
+            apiendpoint = f'v2/nodes/{node_id}'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         filter_properties = ['id', 'name', 'type', 'type_name']
@@ -1962,6 +2048,8 @@ class CSRestAPI:
         retval = []
         base_url = self.__check_url(base_url_cs)
         apiendpoint = 'api/v1/forms/nodes/properties/specific'
+        if self.__apim_enabled:
+            apiendpoint = 'v1/forms/nodes/properties/specific'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         params = { 'id': node_id }
@@ -2046,6 +2134,8 @@ class CSRestAPI:
         retval = []
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/volumes'
+        if self.__apim_enabled:
+            apiendpoint = f'v2/volumes'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         params = {'fields': ['properties{id,name}']}
@@ -2155,6 +2245,8 @@ class CSRestAPI:
         retval = {}
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v1/members/{group_id}'
+        if self.__apim_enabled:
+            apiendpoint = f'v1/members/{group_id}'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         params = { 'expand': 'member' }
@@ -2198,6 +2290,8 @@ class CSRestAPI:
         retval = { 'results': [], 'page_total': 0 }
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/search'
+        if self.__apim_enabled:
+            apiendpoint = f'v2/search'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         params = { 'body': json.dumps({ 'limit': 100, 'where': f'OTName: "{search_term.replace('"', '\"')}" and OTSubType: {sub_type} and OTLocation: {location_node}' })}
@@ -2288,6 +2382,8 @@ class CSRestAPI:
         retval = []
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/smartdocumenttypes'
+        if self.__apim_enabled:
+            apiendpoint = f'v2/smartdocumenttypes'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         params = {}
@@ -2323,6 +2419,8 @@ class CSRestAPI:
         retval = []
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/smartdocumenttypes/smartdocumenttypedetails'
+        if self.__apim_enabled:
+            apiendpoint = f'v2/smartdocumenttypes/smartdocumenttypedetails'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         params = { 'smart_document_type_id': smartdoctype_id }
@@ -2358,6 +2456,8 @@ class CSRestAPI:
         retval = []
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/smartdocumenttypes/rules/{rule_id}/bots'
+        if self.__apim_enabled:
+            apiendpoint = f'v2/smartdocumenttypes/rules/{rule_id}/bots'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         params = {}
@@ -2399,6 +2499,8 @@ class CSRestAPI:
         retval = -1
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v1/nodes'
+        if self.__apim_enabled:
+            apiendpoint = f'v1/nodes'
         url = urllib.parse.urljoin(base_url, apiendpoint)
         data = {'type': 877, 'type_name': 'Add Smart Document Type', 'container': True, 'parent_id': parent_id, 'inactive': True, 'classificationId': classification_id, 'anchorTitle': '', 'anchorTitleShort': smartdoctype_name, 'name': smartdoctype_name, 'classification': classification_id}
         params = {'body': json.dumps(data)}
@@ -2438,6 +2540,8 @@ class CSRestAPI:
         retval = {}
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/smartdocumenttypes/rules'
+        if self.__apim_enabled:
+            apiendpoint = f'v2/smartdocumenttypes/rules'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         params = { 'smart_document_type_id': smartdoctype_id, 'classification_id': classification_id, 'template_id': workspacetemplate_id}
@@ -2477,6 +2581,8 @@ class CSRestAPI:
         retval = {}
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/smartdocumenttypes/rules/{rule_id}/bots/context'
+        if self.__apim_enabled:
+            apiendpoint = f'v2/smartdocumenttypes/rules/{rule_id}/bots/context'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         data = {'location': location_id, 'based_on_category': str(based_on_category_id), 'rule_expression': {'expressionText': '', 'expressionData': [], 'expressionDataKey': ''}, 'mimetype': [''], 'bot_action': 'update'}
@@ -2518,6 +2624,8 @@ class CSRestAPI:
         retval = {}
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/smartdocumenttypes/rules/{rule_id}/bots/makemandatory'
+        if self.__apim_enabled:
+            apiendpoint = f'v2/smartdocumenttypes/rules/{rule_id}/bots/makemandatory'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         data = {'mandatory': is_mandatory, 'bot_action': bot_action}
@@ -2553,6 +2661,8 @@ class CSRestAPI:
         retval = {}
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/smartdocumenttypes/rules/{rule_id}/bots/makemandatory'
+        if self.__apim_enabled:
+            apiendpoint = f'v2/smartdocumenttypes/rules/{rule_id}/bots/makemandatory'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         res = self.call_delete(url)
@@ -2600,6 +2710,8 @@ class CSRestAPI:
         retval = {}
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/smartdocumenttypes/rules/{rule_id}/bots/completenesscheck'
+        if self.__apim_enabled:
+            apiendpoint = f'v2/smartdocumenttypes/rules/{rule_id}/bots/completenesscheck'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         data = {'validity_required': validity_required, 'based_on_attribute': str(based_on_attribute), 'validity_years': num_years, 'validity_months': str(num_months), 'bot_action': bot_action}
@@ -2635,6 +2747,8 @@ class CSRestAPI:
         retval = {}
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/smartdocumenttypes/rules/{rule_id}/bots/completenesscheck'
+        if self.__apim_enabled:
+            apiendpoint = f'v2/smartdocumenttypes/rules/{rule_id}/bots/completenesscheck'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         res = self.call_delete(url)
@@ -2676,6 +2790,8 @@ class CSRestAPI:
         retval = {}
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/smartdocumenttypes/rules/{rule_id}/bots/createdocument'
+        if self.__apim_enabled:
+            apiendpoint = f'v2/smartdocumenttypes/rules/{rule_id}/bots/createdocument'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         data = {'docgen': is_doc_gen, 'docgen_upload_only': only_gen_docs_allowed, 'bot_action': bot_action}
@@ -2711,6 +2827,8 @@ class CSRestAPI:
         retval = {}
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/smartdocumenttypes/rules/{rule_id}/bots/createdocument'
+        if self.__apim_enabled:
+            apiendpoint = f'v2/smartdocumenttypes/rules/{rule_id}/bots/createdocument'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         res = self.call_delete(url)
@@ -2749,6 +2867,8 @@ class CSRestAPI:
         retval = {}
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/smartdocumenttypes/rules/{rule_id}/bots/uploadcontrol'
+        if self.__apim_enabled:
+            apiendpoint = f'v2/smartdocumenttypes/rules/{rule_id}/bots/uploadcontrol'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         members_data = []
@@ -2793,6 +2913,8 @@ class CSRestAPI:
         retval = {}
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/smartdocumenttypes/rules/{rule_id}/bots/uploadcontrol'
+        if self.__apim_enabled:
+            apiendpoint = f'v2/smartdocumenttypes/rules/{rule_id}/bots/uploadcontrol'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         res = self.call_delete(url)
@@ -2837,6 +2959,8 @@ class CSRestAPI:
         retval = {}
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/smartdocumenttypes/rules/{rule_id}/bots/uploadwithapproval'
+        if self.__apim_enabled:
+            apiendpoint = f'v2/smartdocumenttypes/rules/{rule_id}/bots/uploadwithapproval'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         role_hash = {}
@@ -2893,6 +3017,8 @@ class CSRestAPI:
         retval = {}
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/smartdocumenttypes/rules/{rule_id}/bots/uploadwithapproval'
+        if self.__apim_enabled:
+            apiendpoint = f'v2/smartdocumenttypes/rules/{rule_id}/bots/uploadwithapproval'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         res = self.call_delete(url)
@@ -2931,6 +3057,8 @@ class CSRestAPI:
         retval = {}
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/smartdocumenttypes/rules/{rule_id}/bots/reminder'
+        if self.__apim_enabled:
+            apiendpoint = f'v2/smartdocumenttypes/rules/{rule_id}/bots/reminder'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         data = {'rstype': is_reminder, 'bot_action': bot_action}
@@ -2968,6 +3096,8 @@ class CSRestAPI:
         retval = {}
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/smartdocumenttypes/rules/{rule_id}/bots/reminder'
+        if self.__apim_enabled:
+            apiendpoint = f'v2/smartdocumenttypes/rules/{rule_id}/bots/reminder'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         res = self.call_delete(url)
@@ -3012,6 +3142,8 @@ class CSRestAPI:
         retval = {}
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/smartdocumenttypes/rules/{rule_id}/bots/reviewoption'
+        if self.__apim_enabled:
+            apiendpoint = f'v2/smartdocumenttypes/rules/{rule_id}/bots/reviewoption'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         members_data = []
@@ -3055,6 +3187,8 @@ class CSRestAPI:
         retval = {}
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/smartdocumenttypes/rules/{rule_id}/bots/reviewoption'
+        if self.__apim_enabled:
+            apiendpoint = f'v2/smartdocumenttypes/rules/{rule_id}/bots/reviewoption'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         res = self.call_delete(url)
@@ -3093,6 +3227,8 @@ class CSRestAPI:
         retval = {}
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/smartdocumenttypes/rules/{rule_id}/bots/deletecontrol'
+        if self.__apim_enabled:
+            apiendpoint = f'v2/smartdocumenttypes/rules/{rule_id}/bots/deletecontrol'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         members_data = []
@@ -3136,6 +3272,8 @@ class CSRestAPI:
         retval = {}
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/smartdocumenttypes/rules/{rule_id}/bots/deletecontrol'
+        if self.__apim_enabled:
+            apiendpoint = f'v2/smartdocumenttypes/rules/{rule_id}/bots/deletecontrol'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         res = self.call_delete(url)
@@ -3180,6 +3318,8 @@ class CSRestAPI:
         retval = {}
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/smartdocumenttypes/rules/{rule_id}/bots/deletewithapproval'
+        if self.__apim_enabled:
+            apiendpoint = f'v2/smartdocumenttypes/rules/{rule_id}/bots/deletewithapproval'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         role_hash = {}
@@ -3236,6 +3376,8 @@ class CSRestAPI:
         retval = {}
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/smartdocumenttypes/rules/{rule_id}/bots/deletewithapproval'
+        if self.__apim_enabled:
+            apiendpoint = f'v2/smartdocumenttypes/rules/{rule_id}/bots/deletewithapproval'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         res = self.call_delete(url)
@@ -3277,6 +3419,8 @@ class CSRestAPI:
         retval = { 'results': [], 'page_total': 0 }
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/businessworkspaces'
+        if self.__apim_enabled:
+            apiendpoint = f'v2/businessworkspaces'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         params = { 'where_ext_system_id': logical_system, 'where_bo_type': bo_type, 'where_bo_id': bo_id, 'expanded_view': 0, 'page': page, 'limit': 200 }
@@ -3318,6 +3462,8 @@ class CSRestAPI:
         retval = []
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/businessworkspaces/{bws_id}/doctypes'
+        if self.__apim_enabled:
+            apiendpoint = f'v2/businessworkspaces/{bws_id}/doctypes'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         params = { 'skip_validation': False, 'document_type_rule': True, 'document_generation_only': False, 'sort_by': 'DocumentType', 'parent_id': bws_id, 'filter_by_location': True }
@@ -3359,6 +3505,8 @@ class CSRestAPI:
         retval = []
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v1/forms/nodes/categories/create'
+        if self.__apim_enabled:
+            apiendpoint = f'v1/forms/nodes/categories/create'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         params = { 'id': bws_id, 'category_id': category_id }
@@ -3415,6 +3563,8 @@ class CSRestAPI:
         retval = -1
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/businessobjects/{logical_system}/{bo_type}/{bo_id}/hrdocuments'
+        if self.__apim_enabled:
+            apiendpoint = f'v2/businessobjects/{logical_system}/{bo_type}/{bo_id}/hrdocuments'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         params = { 'doc_type': document_type, 'date_of_origin': date_of_origin.isoformat() }
@@ -3470,6 +3620,8 @@ class CSRestAPI:
         retval = -1
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/businessobjects/{logical_system}/{bo_type}/{bo_id}/hrdocuments'
+        if self.__apim_enabled:
+            apiendpoint = f'v2/businessobjects/{logical_system}/{bo_type}/{bo_id}/hrdocuments'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         params = { 'doc_type': document_type, 'date_of_origin': date_of_origin.isoformat() }
@@ -3527,6 +3679,8 @@ class CSRestAPI:
 
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/businessworkspace/preview'
+        if self.__apim_enabled:
+            apiendpoint = f'v2/businessworkspace/preview'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         params = { 'bw_id': bws_id }
@@ -3628,6 +3782,8 @@ class CSRestAPI:
 
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/businessworkspace/preview'
+        if self.__apim_enabled:
+            apiendpoint = f'v2/businessworkspace/preview'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         params = { 'bw_id': bws_id }
@@ -3732,6 +3888,8 @@ class CSRestAPI:
         retval = -1
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/nodes/{node_id}/permissions/owner'
+        if self.__apim_enabled:
+            apiendpoint = f'v2/nodes/{node_id}/permissions/owner'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         params = {'body': json.dumps(new_perms)}
@@ -3767,6 +3925,8 @@ class CSRestAPI:
         retval = -1
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/nodes/{node_id}/permissions/owner'
+        if self.__apim_enabled:
+            apiendpoint = f'v2/nodes/{node_id}/permissions/owner'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         res = self.call_delete(url)
@@ -3820,6 +3980,8 @@ class CSRestAPI:
         retval = -1
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/nodes/{node_id}/permissions/group'
+        if self.__apim_enabled:
+            apiendpoint = f'v2/nodes/{node_id}/permissions/group'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         params = {'body': json.dumps(new_perms)}
@@ -3855,6 +4017,8 @@ class CSRestAPI:
         retval = -1
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/nodes/{node_id}/permissions/group'
+        if self.__apim_enabled:
+            apiendpoint = f'v2/nodes/{node_id}/permissions/group'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         res = self.call_delete(url)
@@ -3909,6 +4073,8 @@ class CSRestAPI:
         retval = -1
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/nodes/{node_id}/permissions/public'
+        if self.__apim_enabled:
+            apiendpoint = f'v2/nodes/{node_id}/permissions/public'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         params = {'body': json.dumps(new_perms)}
@@ -3944,6 +4110,8 @@ class CSRestAPI:
         retval = -1
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/nodes/{node_id}/permissions/public'
+        if self.__apim_enabled:
+            apiendpoint = f'v2/nodes/{node_id}/permissions/public'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         res = self.call_delete(url)
@@ -3997,6 +4165,8 @@ class CSRestAPI:
         retval = -1
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/nodes/{node_id}/permissions/custom/bulk'
+        if self.__apim_enabled:
+            apiendpoint = f'v2/nodes/{node_id}/permissions/custom/bulk'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         params = {'permissions_array': json.dumps(new_perms)}
@@ -4056,6 +4226,8 @@ class CSRestAPI:
         retval = -1
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/nodes/{node_id}/permissions/custom/{right_id}'
+        if self.__apim_enabled:
+            apiendpoint = f'v2/nodes/{node_id}/permissions/custom/{right_id}'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         params = {'body': json.dumps(new_perms)}
@@ -4094,6 +4266,8 @@ class CSRestAPI:
         retval = -1
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/nodes/{node_id}/permissions/custom/{right_id}'
+        if self.__apim_enabled:
+            apiendpoint = f'v2/nodes/{node_id}/permissions/custom/{right_id}'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         res = self.call_delete(url)
@@ -4130,6 +4304,8 @@ class CSRestAPI:
         retval = ''
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v1/webreports/{nickname}'
+        if self.__apim_enabled:
+            apiendpoint = f'v1/webreports/{nickname}'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         if not 'format' in params:
@@ -4164,6 +4340,8 @@ class CSRestAPI:
         retval = ''
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v1/nodes/{node_id}/output'
+        if self.__apim_enabled:
+            apiendpoint = f'v1/nodes/{node_id}/output'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         if not 'format' in params:
@@ -4198,6 +4376,8 @@ class CSRestAPI:
         retval = []
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/docworkflows'
+        if self.__apim_enabled:
+            apiendpoint = f'v2/docworkflows'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         params = { 'doc_id': document_id, 'parent_id': parent_id }
@@ -4236,6 +4416,8 @@ class CSRestAPI:
         retval = {}
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/draftprocesses'
+        if self.__apim_enabled:
+            apiendpoint = f'v2/draftprocesses'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         data = { 'workflow_id': workflow_id, 'doc_ids': document_ids }
@@ -4272,6 +4454,8 @@ class CSRestAPI:
         retval = {}
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v1/forms/draftprocesses/update'
+        if self.__apim_enabled:
+            apiendpoint = f'v1/forms/draftprocesses/update'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         params = { 'draftprocess_id': draft_id }
@@ -4307,6 +4491,8 @@ class CSRestAPI:
         retval = {}
         base_url = self.__check_url(base_url_cs)
         apiendpoint = f'api/v2/draftprocesses/{draft_id}'
+        if self.__apim_enabled:
+            apiendpoint = f'v2/draftprocesses/{draft_id}'
         url = urllib.parse.urljoin(base_url, apiendpoint)
 
         data = { 'action': 'Initiate', 'comment': comment }
