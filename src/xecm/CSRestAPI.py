@@ -3698,6 +3698,8 @@ class CSRestAPI:
 
         if retval > 0:
             apiendpoint = f'api/v2/businessworkspace/{bws_id}/postupload'
+            if self.__apim_enabled:
+                apiendpoint = f'v2/businessworkspace/{bws_id}/postupload'
             url = urllib.parse.urljoin(base_url, apiendpoint)
 
             params = {'docNodeId': retval, 'classification_id': classification_id, 'document_name': remote_filename }
@@ -3801,6 +3803,8 @@ class CSRestAPI:
 
         if retval > 0:
             apiendpoint = f'api/v2/businessworkspace/{bws_id}/postupload'
+            if self.__apim_enabled:
+                apiendpoint = f'v2/businessworkspace/{bws_id}/postupload'
             url = urllib.parse.urljoin(base_url, apiendpoint)
 
             params = {'docNodeId': retval, 'classification_id': classification_id, 'document_name': remote_filename }
