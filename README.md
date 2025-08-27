@@ -29,10 +29,10 @@ if __name__ == '__main__':
     csapi = xecm.CSRestAPI(xecm.LoginType.OTCS_TICKET, f'{cshost}/otcs/cs.exe', 'myuser', 's#cret', True, deflogger)
 
     # get OTDSTicket with username and password
-    csapi = xecm.CSRestAPI(xecm.LoginType.OTDS_TICKET, dshost, 'myuser@partition', 's#cret', True, deflogger)
+    #csapi = xecm.CSRestAPI(xecm.LoginType.OTDS_TICKET, dshost, 'myuser@partition', 's#cret', True, deflogger)
 
     # get OTDS Bearer Token with client id and client secret
-    csapi = xecm.CSRestAPI(xecm.LoginType.OTDS_BEARER, dshost, 'oauth-user', 'gU5p8....4KZ', True, deflogger)
+    #csapi = xecm.CSRestAPI(xecm.LoginType.OTDS_BEARER, dshost, 'oauth-user', 'gU5p8....4KZ', True, deflogger)
 
     # ...
 
