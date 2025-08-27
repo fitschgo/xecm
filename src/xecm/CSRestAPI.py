@@ -295,8 +295,6 @@ class CSRestAPI:
 
         # do REST API call to CS
         req_headers = {'User-Agent': self.__useragent, 'Content-Type': 'application/x-www-form-urlencoded'}
-        if self.__apim_enabled:
-            req_headers['Authorization'] = f'Bearer {self.__apim_bearer_token}'
         r = requests.post(url=url, data=params, headers=req_headers, auth=(client_id, client_secret), verify=self.__verify_ssl)
 
         if self.__logger:
